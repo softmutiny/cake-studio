@@ -1,0 +1,85 @@
+/* A pocket workbench: stationary stage, reachable tools, separate material trays. */
+.mobile-dock,.tray-close{display:none}
+@media(max-width:900px){
+  html{scroll-padding:12px}body{overflow-x:hidden}
+  .app{padding:8px 10px 0;min-height:100svh}
+  header{grid-template-columns:1fr auto;gap:7px;margin:0 0 9px;min-height:0}
+  .brand{padding:3px 9px;border-width:2px;border-radius:16px;gap:5px;transform:none;box-shadow:0 2px #78401930}
+  .brand h1{font-size:21px;letter-spacing:1px}.brand .chef{width:29px;height:35px}.brand span{display:none}
+  .top-actions{gap:6px;flex-wrap:nowrap}.top-actions>span{display:none}
+  #save-btn{font-size:15px;padding:7px 10px;min-height:44px;white-space:nowrap}#save-btn span{display:none}
+  #help-btn{display:none}.sound-panel summary{width:44px;height:44px;font-size:23px}
+  .main-nav{gap:5px;grid-column:1/-1;grid-row:2;min-width:0}
+  .main-nav button{font-size:14px;padding:7px 3px;min-height:44px;min-width:0;border-radius:12px}
+  .main-nav button.active{transform:none}.main-nav b{padding:1px 3px;font-size:10px}
+  html:has(body.mobile-workshop){overflow:hidden}
+  .mobile-workshop{overflow:hidden;overscroll-behavior:none}
+  .mobile-workshop .app{height:100vh;height:100dvh;min-height:0;display:flex;flex-direction:column;padding-top:max(6px,env(safe-area-inset-top));padding-bottom:env(safe-area-inset-bottom)}
+  .mobile-workshop header{flex:0 0 auto}.mobile-workshop footer{display:none}
+  #workshop.active{display:flex;flex-direction:column;align-items:stretch;flex:1;min-height:0;gap:0}
+  .worktable,.worktable.expanded{position:relative;inset:auto;z-index:auto;flex:1;min-height:0;width:100%;padding:0;overflow:visible;box-shadow:none;border-radius:0;background:transparent;gap:0}
+  .view-controls{display:flex;align-content:center;justify-content:flex-start;gap:4px;padding:5px 6px;margin:0;min-height:100px;height:100px;flex:0 0 100px;border-radius:14px}
+  .view-controls button{min-height:40px;padding:5px 9px;font-size:13px;border-radius:10px}
+  .view-controls label{font-size:12px;gap:4px}.view-controls label[for=view-zoom]{flex:1;min-width:150px}
+  .view-controls input{height:36px;width:40px;min-width:40px;flex:1}.view-controls output{min-width:34px;font-size:11px}
+  .view-controls select{height:40px;width:125px;max-width:125px;padding:4px;font-size:12px}
+  #view-expand{display:none}
+  .stage-heading,.worktable.expanded .stage-heading{display:flex;flex:0 0 30px;min-height:30px;height:30px;margin:0}
+  .ribbon{font-size:12px;max-width:100%;padding:4px 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .canvas-wrap,.worktable.expanded .canvas-wrap{flex:1 1 0;min-height:0;height:auto;width:100%;overflow:hidden}
+  #cake-canvas,.worktable.expanded #cake-canvas{position:absolute;inset:0;width:100%;height:100%;max-height:none;touch-action:none;-webkit-user-select:none;user-select:none}
+  #empty-hint{top:16%;padding:0 12px}#empty-hint b{font-size:19px}#empty-hint span{font-size:12px;line-height:1.6;margin-top:8px}
+  .toolbox{order:4;flex:0 0 67px;min-height:67px;justify-content:flex-start;gap:3px;padding:4px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none;border-radius:16px}
+  .toolbox::-webkit-scrollbar{display:none}.toolbox button{flex:0 0 51px;min-width:51px;min-height:54px;padding:3px 2px;font-size:12px}
+  .toolbox button span{height:30px;margin-bottom:2px}.toolbox button span img{width:33px;height:33px}
+  #undo-btn{order:-2}#redo-btn{order:-1}
+  .interaction-tip{order:3;flex:0 0 29px;min-height:29px;width:100%;padding:4px 7px;font-size:11px;line-height:21px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#fff4dfd9;border-radius:9px;margin-bottom:4px}
+  .mobile-dock{display:flex;order:5;width:100%;flex:0 0 51px;gap:6px;padding:5px 0 2px}
+  .mobile-dock button{flex:1;min-width:0;min-height:44px;font-size:14px;padding:6px;border-radius:12px;background:#fff5e2}
+  .mobile-dock button:first-child{background:#ffda7b}.mobile-dock button[aria-expanded=true]{background:#bee0d7;border-color:#78a99a}.mobile-dock button.ready{color:#287763}
+  .ingredients,.structure,.selection-controls,.worktable.expanded .selection-controls{display:none}
+  body[data-tray=materials] .ingredients,body[data-tray=layers] .structure,body[data-tray=adjust] .selection-controls{
+    display:flex;position:fixed;z-index:35;left:8px;right:8px;bottom:calc(124px + env(safe-area-inset-bottom));width:auto;margin:0;
+    height:min(56dvh,520px);max-height:calc(100dvh - 180px - env(safe-area-inset-bottom));padding:12px 13px;flex-direction:column;
+    background:#fff8eafc;border:2px solid #b88755;border-radius:22px;box-shadow:0 -9px 30px #70422235;overflow:hidden;
+  }
+  .tray-close{display:block;align-self:flex-end;min-height:44px;padding:7px 14px;font-size:14px;background:#d5e9de;border:1px solid #96b5a3;box-shadow:none;margin-bottom:7px}
+  .ingredients .panel-head,.structure .panel-head{margin:-45px 100px 10px 0;min-height:38px}.panel-head h2{font-size:20px}
+  #go-kitchen{min-height:40px;padding:5px;font-size:12px;white-space:nowrap}.ingredients .panel-head{margin-right:103px}
+  .material-tabs{padding:4px 0 8px;flex:0 0 auto}.material-tabs button{min-height:44px;font-size:14px}
+  #material-content{min-height:0;padding-top:10px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  .material-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.material-card{min-height:114px;padding:8px 3px}
+  .material-card .icon{height:65px;width:74px}.material-card b{font-size:13px}.stock{font-size:10px;right:3px;top:3px}
+  .cart-note{display:none}.material-instruction{padding-bottom:9px}.tiny-intro{display:none}
+  #material-content:has(.shape-choices)>.material-instruction,#material-content .shape-note{display:none}
+  .shape-choices,.size-choices{margin:0 0 7px;gap:6px}.shape-choices button,.size-choices button{min-height:44px;padding:6px 3px;font-size:14px}.shape-choices button span{font-size:18px}
+  .flavor-tabs{flex-wrap:nowrap;gap:4px;margin-bottom:8px}.flavor-tabs button{flex:1;min-width:0;font-size:12px}
+  .flavor-tabs button,.decor-tabs button,.surface-modes button,.nozzle-grid button{min-height:44px}
+  .nozzle-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.nozzle-grid button{font-size:12px}
+  .color-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .color-presets button{width:100%;height:44px;min-height:44px;border-radius:13px;outline-offset:0}
+  input[type=range]{height:36px}input[type=color]{width:52px;height:44px}
+  input:not([type=range]):not([type=checkbox]),textarea,select{font-size:16px}
+  #layer-list{flex:1;min-height:0;margin:3px 0 8px;overscroll-behavior:contain}
+  .layer-actions{padding-top:6px}.layer-actions p{min-height:0;margin-bottom:4px}.structure-bottom{margin-top:10px;padding-top:8px}.structure-bottom p{display:none}
+  body[data-tray=adjust] .selection-controls{height:auto;min-height:260px;overflow:auto;gap:7px}
+  .selection-controls>span{font-size:14px}.selection-controls label{margin:0;min-height:40px}
+  .selection-controls .order-controls{display:flex;flex-wrap:wrap;gap:5px}.selection-controls .order-controls button{flex:1;min-height:44px;white-space:nowrap;font-size:12px}
+  #toast{bottom:calc(132px + env(safe-area-inset-bottom));padding:10px 15px;font-size:12px;width:max-content;max-width:90vw}
+  dialog{max-height:calc(100dvh - 24px);max-width:calc(100vw - 16px);padding:26px 16px 18px;border-radius:20px}
+  .modal-close{min-width:44px;min-height:44px}.modal-actions{flex-wrap:wrap}.modal-actions button{min-height:44px}
+  .section-title{padding:15px;gap:10px;flex-wrap:wrap}.section-title h2{font-size:26px}.section-title p{font-size:12px}
+  .kitchen-layout{grid-template-columns:1fr;gap:12px}.kitchen-layout aside{padding:12px}#raw-mini{grid-template-columns:repeat(4,minmax(0,1fr))}.raw-item b{font-size:12px}
+  .recipe-area{padding:12px}.filter-row{gap:5px}.filter-row button{flex:1;font-size:14px;padding:7px 4px;white-space:nowrap}
+  #recipe-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.recipe-card{padding:12px 9px;min-width:0}.recipe-card>.icon{width:100%;height:85px}.recipe-card h3{font-size:19px}.recipe-card button{font-size:15px;padding:8px 3px}.cost-list{font-size:11px}
+  .kitchen-foot{flex-wrap:wrap}.kitchen-foot button{width:100%}#gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.gallery-card{padding:8px}.gallery-card h3{font-size:18px}.gallery-card p{line-height:1.6}
+  .sound-settings{top:58px;right:10px}.sound-settings button{min-height:44px}
+}
+@media(max-width:360px){.brand h1{font-size:18px}.brand .chef{display:none}.view-controls button{padding:5px 7px}.view-controls label[for=view-zoom]{min-width:120px}.view-controls select{max-width:112px}.material-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ingredients .panel-head h2{font-size:17px}}
+@media(max-width:900px) and (max-height:520px) and (orientation:landscape){
+  .mobile-workshop header{grid-template-columns:1fr auto;margin-bottom:4px}.mobile-workshop .brand,.mobile-workshop .sound-panel{display:none}.mobile-workshop .main-nav{grid-column:1;grid-row:1}.mobile-workshop .top-actions{grid-column:2;grid-row:1}.view-controls{flex:0 0 54px;min-height:54px;height:54px;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden}.view-controls>*{flex-shrink:0}.view-controls label[for=view-zoom]{flex:0 0 180px}
+  .stage-heading,.worktable.expanded .stage-heading,.interaction-tip{display:none}.toolbox{flex-basis:57px;min-height:57px}.toolbox button{min-height:48px}.toolbox button span{height:24px}.toolbox button span img{height:26px}
+  .mobile-dock{flex-basis:49px}.mobile-dock button{min-height:42px}.mobile-workshop .app{padding-top:4px}
+  body[data-tray] .panel,body[data-tray=adjust] .selection-controls{left:auto;width:min(440px,60vw);bottom:115px;height:calc(100dvh - 125px);max-height:none;min-height:0}
+}
+@media(hover:none){button:hover:not(:disabled){transform:none}button:active:not(:disabled){transform:none}.mobile-workshop{-webkit-user-select:none;user-select:none}input,textarea{-webkit-user-select:text;user-select:text}}

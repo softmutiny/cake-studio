@@ -10,6 +10,31 @@ function setup(){
  const click=dataset=>callbacks['document:click']({target:{closest:()=>({dataset})}}),point=(x,y)=>({button:0,buttons:1,pointerId:1,clientX:x,clientY:y,preventDefault(){}});
  return{callbacks,click,point,store,frames,nodes,art:context.CakeArt,state:()=>JSON.parse(store.get('cake-studio-test-v2'))};
 }
+test('触摸绘制只跟随起笔手指，第二根手指不会截断或另起奶油笔画',()=>{
+ const h=setup();h.click({item:'vanilla'});h.click({tool:'pipe'});
+ const emit=(type,x,id=1,primary=true)=>h.callbacks['#cake-canvas:'+type]({...h.point(x,390),pointerId:id,isPrimary:primary,pointerType:'touch'});
+ emit('pointerdown',300);emit('pointermove',330);emit('pointerdown',450,2,false);emit('pointermove',470,2,false);emit('pointerup',470,2,false);
+ assert.equal(h.state().draft.strokes.length,0);emit('pointermove',350);emit('pointerup',370);
+ assert.equal(h.state().draft.strokes.length,1);assert.equal(h.state().inventory.whipped,15.8);assert.ok(h.state().draft.strokes[0].points.every(p=>p.u<.1));
+});
+test('系统取消触摸后保存已画笔画，下一次手指仍能正常起笔',()=>{
+ const h=setup();h.click({item:'vanilla'});h.click({tool:'pipe'});h.callbacks['#cake-canvas:pointerdown'](h.point(300,390));h.callbacks['#cake-canvas:pointermove'](h.point(330,390));h.callbacks['#cake-canvas:pointercancel'](h.point(330,390));
+ h.callbacks['#cake-canvas:pointerdown']({...h.point(400,390),pointerId:7});h.callbacks['#cake-canvas:pointerup']({...h.point(430,390),pointerId:7});assert.equal(h.state().draft.strokes.length,2);
+});
+test('左栏重复点击取消选中，撤回后可用两种快捷键前进',()=>{
+ const h=setup();h.click({item:'vanilla'});h.click({layer:'0'});assert.equal(h.nodes.get('#delete-layer').disabled,false);h.click({layer:'0'});assert.equal(h.nodes.get('#delete-layer').disabled,true);
+ const key=(key,extra={})=>h.callbacks['document:keydown']({key,ctrlKey:true,target:{tagName:'BODY'},preventDefault(){},...extra});
+ key('z');assert.equal(h.state().draft.layers.length,0);key('z',{shiftKey:true});assert.equal(h.state().draft.layers.length,1);key('z');key('y');assert.equal(h.state().draft.layers.length,1);assert.equal(h.nodes.get('#redo-btn').disabled,true);
+});
+test('真实盘上手势：侧边摆装饰和连续奶油，底部图层可删除并整步撤回',()=>{
+ const h=setup();h.click({item:'vanilla'});h.click({plate:'blue'});h.click({category:'decoration'});h.click({surface:'plate'});h.click({item:'berry'});h.callbacks['#cake-canvas:pointerdown'](h.point(589,450));assert.equal(h.state().draft.decos[0].surface,'plate');assert.equal(h.state().draft.decos[0].level,0);
+ h.click({tool:'pipe'});h.callbacks['#cake-canvas:pointerdown'](h.point(589,450));h.callbacks['#cake-canvas:pointermove'](h.point(589,460));h.callbacks['#cake-canvas:pointerup'](h.point(589,464));assert.equal(h.state().draft.strokes[0].surface,'plate');assert.ok(h.state().draft.strokes[0].points.length>=2);
+ h.click({layer:'0'});h.callbacks['document:keydown']({key:'Delete',target:{tagName:'BODY'},preventDefault(){}});assert.equal(h.state().draft.layers.length,0);assert.equal(h.state().draft.decos.length,1);h.callbacks['document:keydown']({key:'z',ctrlKey:true,target:{tagName:'BODY'},preventDefault(){}});assert.equal(h.state().draft.layers.length,1);assert.ok(Core.validate(h.state()));
+});
+test('颜色输入框切换会提交前一壶；下一次点淋保留旧色与旧用量',()=>{
+ const h=setup();h.click({item:'vanilla'});h.click({tool:'pour'});const p=h.point(340,390);h.callbacks['#cake-canvas:pointerdown'](p);for(let i=1;i<=30;i++)for(const fn of h.frames.splice(0))fn(i*1000/60);h.callbacks['#cake-canvas:pointerup'](p);
+ h.callbacks['document:input']({target:{id:'cream-color',value:'#a4d6ef'}});const before=h.state().draft.glazes[0],old=before.pigments[0];assert.ok(old.top.some(n=>n>0));h.callbacks['#cake-canvas:pointerdown'](h.point(450,390));for(let i=1;i<=30;i++)for(const fn of h.frames.splice(0))fn(i*1000/60);h.callbacks['#cake-canvas:pointerup'](h.point(450,390));h.click({tool:'move'});const after=h.state().draft.glazes[0];assert.equal(after.pigments.length,2);assert.equal(after.pigments[0].color,old.color);assert.ok(after.pigments[0].top.some(n=>n>0));assert.ok(after.pigments[1].top.some(n=>n>0));assert.ok(Core.validate(h.state()));
+});
 test('真实指针处理器：同一次按住画 100 圈、短暂越界返回，松开才保存为一笔',()=>{
  const h=setup();h.click({item:'vanilla'});h.click({tool:'pipe'});h.callbacks['#cake-canvas:pointerdown'](h.point(500,402));
  for(let i=1;i<=24000;i++){const a=i/240*Math.PI*2;h.callbacks['#cake-canvas:pointermove'](h.point(380+120*Math.cos(a),402+40*Math.sin(a)));}
@@ -49,4 +74,4 @@ test('真实奶壶手势：持续出料、越界暂停、松手续流、保存�
  const state=h.state();assert.equal(state.draft.glazes.length,1);assert.ok(state.draft.glazes[0].total>190&&state.draft.glazes[0].total<215);assert.ok(state.inventory.whipped<16);assert.ok(Core.validate(state));
  h.callbacks['document:keydown']({key:'z',ctrlKey:true,target:{tagName:'BODY'},preventDefault(){}});assert.equal(h.state().draft.glazes.length,0);assert.equal(h.state().inventory.whipped,16);
 });
-test('真实多层奶壶手势：三层瀑布一次提交和撤回，固定步长完成接力',()=>{const h=setup();for(const size of[8,6,4]){h.click({size:String(size)});h.click({item:'vanilla'});}h.click({tool:'pour'});const g=h.art.geometry(h.state().draft),p=h.point(g.x,g.y+g.ry*.94);h.callbacks['#cake-canvas:pointerdown'](p);function frame(now){for(const fn of h.frames.splice(0))fn(now);}for(let i=1;i<=420;i++)frame(i*1000/60);h.callbacks['#cake-canvas:pointerup'](p);for(let i=421;i<=910;i++)frame(i*1000/60);const state=h.state();assert.equal(state.draft.glazes.length,3);assert.ok(state.draft.glazes.find(x=>x.level===1).total>200);assert.ok(Core.validate(state));assert.ok(state.inventory.whipped>14&&state.inventory.whipped<15);h.callbacks['document:keydown']({key:'z',ctrlKey:true,target:{tagName:'BODY'},preventDefault(){}});assert.equal(h.state().draft.glazes.length,0);assert.equal(h.state().inventory.whipped,16);});
+test('真实多层奶壶手势：三层瀑布一次提交和撤回，固定步长完成接力',()=>{const h=setup();for(const size of[8,6,4]){h.click({size:String(size)});h.click({item:'vanilla'});}h.click({tool:'pour'});const g=h.art.geometry(h.state().draft),p=h.point(g.x,g.y+g.ry*.94);h.callbacks['#cake-canvas:pointerdown'](p);function frame(now){for(const fn of h.frames.splice(0))fn(now);}for(let i=1;i<=420;i++)frame(i*1000/60);h.callbacks['#cake-canvas:pointerup'](p);for(let i=421;i<=1800;i++)frame(i*1000/60);const state=h.state();assert.equal(state.draft.glazes.length,3);assert.ok(state.draft.glazes.find(x=>x.level===1).total>80);assert.ok(Core.validate(state));assert.ok(state.inventory.whipped>14&&state.inventory.whipped<15);h.callbacks['document:keydown']({key:'z',ctrlKey:true,target:{tagName:'BODY'},preventDefault(){}});assert.equal(h.state().draft.glazes.length,0);assert.equal(h.state().inventory.whipped,16);});

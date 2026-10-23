@@ -1,1 +1,9 @@
-{"name": "cake-studio", "version": "0.10.0", "private": true, "scripts": {"start": "node server.cjs", "test": "node --test tests/core.test.cjs tests/gesture.test.cjs tests/audio.test.cjs tests/tiers.test.cjs tests/pour.test.cjs"}}
+{
+  "name": "cake-studio",
+  "version": "0.14.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.cjs",
+    "test": "node --test tests/core.test.cjs tests/gesture.test.cjs tests/audio.test.cjs tests/tiers.test.cjs tests/pour.test.cjs tests/pour-art.test.cjs tests/plating-mix.test.cjs tests/thick-glaze.test.cjs"
+  }
+}

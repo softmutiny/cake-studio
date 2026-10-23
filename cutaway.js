@@ -24,7 +24,7 @@ function draw(canvas,cake,offset=0,progress=1){const c=canvas.getContext('2d'),m
  if(row.kind==='cream'){c.fillStyle=shade(row.color,13);c.fillRect(left,y+2,width,Math.max(2,h*.22));}
  for(const p of row.pieces){const x=580+(p.left+p.right)/2*235,w=(p.right-p.left)*235,ph=Math.min(h*.92,26*scale*p.depth),py=bottom-(row.bottom+p.z+7)*scale;fruit(c,p,x,Math.max(y+ph*.48,Math.min(y+h-ph*.48,py)),w,ph);}c.restore();
  c.strokeStyle=shade(row.color,-35);c.lineWidth=1.6;c.strokeRect(left,y,width,h);
- if(coat){c.fillStyle=coat;c.fillRect(left-5,y,6,h);c.fillRect(left+width-1,y,6,h);const above=model.rows[row.index+1];if(!above||above.scale<row.scale){c.fillRect(left-5,y-4,width+10,6);}}
+ if(row.coating||coat){c.fillStyle=CakeCore.colorValue(row.coating||coat);c.fillRect(left-5,y,6,h);c.fillRect(left+width-1,y,6,h);const above=model.rows[row.index+1];if(!above||above.scale<row.scale){c.fillRect(left-5,y-4,width+10,6);}}
  c.save();c.beginPath();c.rect(left-2,y-25,width+4,h+30);c.clip();for(const p of row.cream)oval(c,580+p.u*235,y,Math.max(3,p.size*.55*row.scale,(p.span||0)*235/360),Math.max(3,p.size*.22),p.color,shade(p.color,-38));c.restore();
  }}
  c.fillStyle='#805139';c.font='24px Happy,sans-serif';c.textAlign='center';c.fillText('这一刀，切到你的搭配',580,506);c.font='14px "Microsoft YaHei",sans-serif';c.fillText('不同落刀位置，会遇到不同的夹心',580,533);c.restore();}
