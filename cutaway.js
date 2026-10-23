@@ -18,19 +18,15 @@ function draw(canvas,cake,offset=0,progress=1){const c=canvas.getContext('2d'),m
  if(progress>0){c.save();c.globalAlpha=progress;c.drawImage(original,4,15,280,236);c.fillStyle='#855438';c.font='20px Happy,sans-serif';c.textAlign='center';c.fillText('外面的模样',144,257);
  const scale=Math.min(1.5,280/Math.max(48,model.height)),width=470*model.halfWidth,left=580-width/2,bottom=437,top=bottom-model.height*scale,coat=model.coat,upper=model.rows.at(-1),edge=coat||upper?.color||'#edce94';
  oval(c,580,458,width*.59,22,'#e5cdab');c.fillStyle='#fdf8eb';c.strokeStyle='#a99272';c.lineWidth=2;c.beginPath();c.roundRect(left-30,440,width+60,15,8);c.fill();c.stroke();
- for(const [a,b]of model.intervals){const left=580+a*235,width=(b-a)*235;
- // The cut can expose two separate lobes when it crosses a heart notch.
- c.beginPath();if(model.shape==='round')c.ellipse(left+width/2,top,width/2,32,0,Math.PI,Math.PI*2);else{c.moveTo(left,top);c.lineTo(left+width*.18,top-25);c.lineTo(left+width*.8,top-25);c.lineTo(left+width,top);}c.closePath();c.fillStyle=edge;c.fill();c.strokeStyle='#815438';c.lineWidth=2.5;c.stroke();
- for(const row of model.rows){const y=bottom-(row.bottom+row.height)*scale,h=row.height*scale;c.save();c.beginPath();c.rect(left,y,width,h);c.clip();c.fillStyle=row.kind==='filling'?'#e8d5b6':row.color;c.fillRect(left,y,width,h);
-  if(row.kind==='base'){const random=seedFor(cake.id+':'+row.index);for(let i=0;i<95;i++){const x=left+random()*width,py=y+random()*h,rx=1+random()*2.6;oval(c,x,py,rx,rx*.65,i%3?shade(row.color,-22):shade(row.color,22));}if(items[row.item].texture){for(let i=0;i<20;i++)oval(c,left+random()*width,y+random()*h,1.8,1.3,shade(row.color,-65));}c.strokeStyle=shade(row.color,-32);c.lineWidth=2;c.beginPath();c.moveTo(left,y+2);c.lineTo(left+width,y+2);c.stroke();}
-  if(row.kind==='cream'){c.fillStyle=shade(row.color,13);c.fillRect(left,y+2,width,Math.max(2,h*.22));}
-  for(const p of row.pieces){const x=580+(p.left+p.right)/2*235,w=(p.right-p.left)*235,ph=Math.min(h*.92,26*scale*p.depth),py=bottom-(row.bottom+p.z+7)*scale;fruit(c,p,x,Math.max(y+ph*.48,Math.min(y+h-ph*.48,py)),w,ph);}
-  c.restore();
-  c.save();c.beginPath();c.rect(left,top-25,width,bottom-top+30);c.clip();for(const p of row.cream){const x=580+p.u*235,cy=row.kind==='filling'?bottom-row.bottom*scale:y;oval(c,x,cy,Math.max(3,p.size*.55,(p.span||0)*235/360),Math.max(3,p.size*.22),p.color,shade(p.color,-38));}c.restore();
- }
- if(coat){c.fillStyle=coat;c.fillRect(left-6,top,7,bottom-top);c.fillRect(left+width-1,top,7,bottom-top);c.fillRect(left-6,top-5,width+12,7);}
- c.strokeStyle='#795034';c.lineWidth=2.5;c.strokeRect(left-(coat?6:0),top-(coat?5:0),width+(coat?12:0),bottom-top+(coat?5:0));
- }
+ for(const row of model.rows){const y=bottom-(row.bottom+row.height)*scale,h=row.height*scale;for(const [a,b]of row.intervals||model.intervals){const left=580+a*235,width=(b-a)*235;if(width<=0)continue;
+ c.save();c.beginPath();c.rect(left,y,width,h);c.clip();c.fillStyle=row.kind==='filling'?'#e8d5b6':row.color;c.fillRect(left,y,width,h);
+ if(row.kind==='base'){const random=seedFor(cake.id+':'+row.index);for(let i=0;i<95;i++){const x=left+random()*width,py=y+random()*h,rx=1+random()*2.6;oval(c,x,py,rx,rx*.65,i%3?shade(row.color,-22):shade(row.color,22));}if(items[row.item].texture)for(let i=0;i<20;i++)oval(c,left+random()*width,y+random()*h,1.8,1.3,shade(row.color,-65));}
+ if(row.kind==='cream'){c.fillStyle=shade(row.color,13);c.fillRect(left,y+2,width,Math.max(2,h*.22));}
+ for(const p of row.pieces){const x=580+(p.left+p.right)/2*235,w=(p.right-p.left)*235,ph=Math.min(h*.92,26*scale*p.depth),py=bottom-(row.bottom+p.z+7)*scale;fruit(c,p,x,Math.max(y+ph*.48,Math.min(y+h-ph*.48,py)),w,ph);}c.restore();
+ c.strokeStyle=shade(row.color,-35);c.lineWidth=1.6;c.strokeRect(left,y,width,h);
+ if(coat){c.fillStyle=coat;c.fillRect(left-5,y,6,h);c.fillRect(left+width-1,y,6,h);const above=model.rows[row.index+1];if(!above||above.scale<row.scale){c.fillRect(left-5,y-4,width+10,6);}}
+ c.save();c.beginPath();c.rect(left-2,y-25,width+4,h+30);c.clip();for(const p of row.cream)oval(c,580+p.u*235,y,Math.max(3,p.size*.55*row.scale,(p.span||0)*235/360),Math.max(3,p.size*.22),p.color,shade(p.color,-38));c.restore();
+ }}
  c.fillStyle='#805139';c.font='24px Happy,sans-serif';c.textAlign='center';c.fillText('这一刀，切到你的搭配',580,506);c.font='14px "Microsoft YaHei",sans-serif';c.fillText('不同落刀位置，会遇到不同的夹心',580,533);c.restore();}
  c.restore();return model;
 }
