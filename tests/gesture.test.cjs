@@ -4,7 +4,7 @@ function setup(){
  const callbacks={},nodes=new Map(),store=new Map(),frames=[];
  const element=id=>{if(!nodes.has(id))nodes.set(id,{id,style:{},classList:{add(){},remove(){},toggle(){}},textContent:'',innerHTML:'',scrollTop:0,addEventListener(type,fn){callbacks[id+':'+type]=fn;},getBoundingClientRect(){return{left:0,top:0,width:760,height:640}},focus(){},setPointerCapture(){},hasPointerCapture(){return true},releasePointerCapture(){},setAttribute(){}});return nodes.get(id)};
  const document={querySelector:s=>element(s),querySelectorAll:()=>[],addEventListener(type,fn){callbacks['document:'+type]=fn;},body:{classList:{add(){},remove(){}}}};
- const context={CakeCore:Core,document,location:{search:'?test=1'},URLSearchParams,localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},requestAnimationFrame:fn=>frames.push(fn),setTimeout:()=>1,clearTimeout(){},Image:class{},window:{addEventListener(){}},performance:{now:()=>0},console};
+ const context={CakeCore:Core,CakePour:require('../pour.js'),document,location:{search:'?test=1'},URLSearchParams,localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},requestAnimationFrame:fn=>frames.push(fn),setTimeout:()=>1,clearTimeout(){},Image:class{},window:{addEventListener(){}},performance:{now:()=>0},console};
  vm.createContext(context);vm.runInContext(fs.readFileSync(path.join(__dirname,'../renderer.js'),'utf8'),context);context.CakeArt=context.window.CakeArt;context.CakeArt.draw=()=>{};
  vm.runInContext(fs.readFileSync(path.join(__dirname,'../app.js'),'utf8'),context);
  const click=dataset=>callbacks['document:click']({target:{closest:()=>({dataset})}}),point=(x,y)=>({button:0,buttons:1,pointerId:1,clientX:x,clientY:y,preventDefault(){}});
@@ -37,3 +37,15 @@ test('裸蛋糕顶层为散夹心时，裱花仍落在支撑胚表面而非悬�
 
  test('实际指针选择心形，凹口拒绝裱花而花瓣不作整体裁切',()=>{const h=setup();h.click({shape:'heart'});h.click({item:'tarobase'});h.click({tool:'pipe'});h.callbacks['#cake-canvas:pointerdown'](h.point(380,342));h.callbacks['#cake-canvas:pointerup'](h.point(380,342));assert.equal(h.state().draft.strokes.length,0);h.callbacks['#cake-canvas:pointerdown'](h.point(470,342));h.callbacks['#cake-canvas:pointerup'](h.point(470,342));assert.equal(h.state().draft.strokes.length,1);const g={x:380,y:390,rx:180,ry:68,height:48,shape:'heart'},s={size:16,surface:'top',points:[{u:-.5,v:-.7},{u:.5,v:-.7}]},pts=h.art.creamSamples(s,g);assert.ok(pts.some(p=>p.break));assert.ok(!pts.some(p=>Math.abs(p.x-380)<30));let clips=0;const ctx=new Proxy({clip(){clips++;}},{get:(t,k)=>t[k]||(()=>{})});h.art.drawStroke(ctx,{...s,style:'rose',color:'#fff3d5'},g);assert.equal(clips,0);h.art.drawStroke(ctx,{...s,style:'round',color:'#fff3d5'},g);assert.equal(clips,1);});
  test('形状与花嘴分类切换不改舞台布局，最后五分之一奶油仍能起笔',()=>{const h=setup();h.click({item:'vanilla'});for(let i=0;i<80;i++){h.click({tool:'pipe'});h.callbacks['#cake-canvas:pointerdown'](h.point(380,390));h.callbacks['#cake-canvas:pointerup'](h.point(380,390));}assert.equal(h.state().draft.strokes.length,80);assert.equal(h.state().inventory.whipped,0);h.callbacks['#cake-canvas:pointerdown'](h.point(380,390));h.callbacks['#cake-canvas:pointerup'](h.point(380,390));assert.equal(h.state().draft.strokes.length,80);assert.equal(h.nodes.get('#selection-controls').hidden,false);});
+
+
+test('真实奶壶手势：持续出料、越界暂停、松手续流、保存和整次撤回',()=>{
+ const h=setup();h.click({item:'vanilla'});h.click({tool:'pour'});h.callbacks['#cake-canvas:pointerdown'](h.point(380,435));
+ function frame(now){const pending=h.frames.splice(0);for(const fn of pending)fn(now);}
+ for(let i=1;i<=60;i++)frame(i*1000/60);
+ h.callbacks['#cake-canvas:pointermove'](h.point(900,-100));for(let i=61;i<=90;i++)frame(i*1000/60);
+ h.callbacks['#cake-canvas:pointermove'](h.point(390,435));for(let i=91;i<=120;i++)frame(i*1000/60);
+ h.callbacks['#cake-canvas:pointerup'](h.point(390,435));for(let i=121;i<=310;i++)frame(i*1000/60);
+ const state=h.state();assert.equal(state.draft.glazes.length,1);assert.ok(state.draft.glazes[0].total>190&&state.draft.glazes[0].total<215);assert.ok(state.inventory.whipped<16);assert.ok(Core.validate(state));
+ h.callbacks['document:keydown']({key:'z',ctrlKey:true,target:{tagName:'BODY'},preventDefault(){}});assert.equal(h.state().draft.glazes.length,0);assert.equal(h.state().inventory.whipped,16);
+});
