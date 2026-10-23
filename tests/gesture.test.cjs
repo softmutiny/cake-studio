@@ -45,7 +45,8 @@ test('真实奶壶手势：持续出料、越界暂停、松手续流、保存�
  for(let i=1;i<=60;i++)frame(i*1000/60);
  h.callbacks['#cake-canvas:pointermove'](h.point(900,-100));for(let i=61;i<=90;i++)frame(i*1000/60);
  h.callbacks['#cake-canvas:pointermove'](h.point(390,435));for(let i=91;i<=120;i++)frame(i*1000/60);
- h.callbacks['#cake-canvas:pointerup'](h.point(390,435));for(let i=121;i<=310;i++)frame(i*1000/60);
+ h.callbacks['#cake-canvas:pointerup'](h.point(390,435));for(let i=121;i<=610;i++)frame(i*1000/60);
  const state=h.state();assert.equal(state.draft.glazes.length,1);assert.ok(state.draft.glazes[0].total>190&&state.draft.glazes[0].total<215);assert.ok(state.inventory.whipped<16);assert.ok(Core.validate(state));
  h.callbacks['document:keydown']({key:'z',ctrlKey:true,target:{tagName:'BODY'},preventDefault(){}});assert.equal(h.state().draft.glazes.length,0);assert.equal(h.state().inventory.whipped,16);
 });
+test('真实多层奶壶手势：三层瀑布一次提交和撤回，固定步长完成接力',()=>{const h=setup();for(const size of[8,6,4]){h.click({size:String(size)});h.click({item:'vanilla'});}h.click({tool:'pour'});const g=h.art.geometry(h.state().draft),p=h.point(g.x,g.y+g.ry*.94);h.callbacks['#cake-canvas:pointerdown'](p);function frame(now){for(const fn of h.frames.splice(0))fn(now);}for(let i=1;i<=420;i++)frame(i*1000/60);h.callbacks['#cake-canvas:pointerup'](p);for(let i=421;i<=910;i++)frame(i*1000/60);const state=h.state();assert.equal(state.draft.glazes.length,3);assert.ok(state.draft.glazes.find(x=>x.level===1).total>200);assert.ok(Core.validate(state));assert.ok(state.inventory.whipped>14&&state.inventory.whipped<15);h.callbacks['document:keydown']({key:'z',ctrlKey:true,target:{tagName:'BODY'},preventDefault(){}});assert.equal(h.state().draft.glazes.length,0);assert.equal(h.state().inventory.whipped,16);});
