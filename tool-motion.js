@@ -5,7 +5,7 @@ function approach(value,target,dt,speed){const delta=target-value;return value+M
 function pipe(state,cursor,tip,active,now){const target=active&&tip?Math.max(0,tip.ground-tip.y):0;if(!state||state.kind!=='pipe')state={kind:'pipe',lift:0,time:now};const dt=clamp(now-state.time,0,50);state.lift=approach(state.lift,target,dt,.28);if(Math.abs(target-state.lift)<.08)state.lift=target;state.time=now;return{state,x:cursor.x,y:cursor.y-state.lift,animating:Math.abs(target-state.lift)>.08};}
 function spatula(state,cursor,session,view,surface,length,now){
  const top=view==='top',side=!top&&surface==='side',ratio=top||side?1:.38;
- const raw=side?-Math.PI/2:session?session.sp.a+Math.PI/2+.42:null;
+ const raw=side?-Math.PI/2:session?(session.sp.heldAngle??session.sp.a)+Math.PI/2+.42:null;
  if(!state||state.kind!=='smooth')state={kind:'smooth',angle:side?-Math.PI/2:-.25,time:now,projected:1};
  const changed=state.surface!==surface||state.view!==view;
  const desired=side?-Math.PI/2:raw===null?(changed?-.25:state.angle):Math.atan2(Math.sin(raw)*ratio,Math.cos(raw));
