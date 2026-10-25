@@ -1,7 +1,9 @@
 (function(){
  'use strict';
+ const disposers=new WeakMap();
  const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
  function mount(root,input,{editable=false,onPosition=null}={}){
+  disposers.get(root)?.();
   const p=CakeGiftModel.payload(input),theme=CakeGiftModel.themes[p.template];
   root.replaceChildren();root.className='gift-view';root.style.setProperty('--gift-paper',theme.paper);root.style.setProperty('--gift-ink',theme.ink);root.style.setProperty('--gift-accent',p.accent);
   let phase='unlit',effectTimer=null;
@@ -15,6 +17,10 @@
   candle.append(body,flame,smoke);stage.append(cake,candle,confetti);
   const ritual=el('section','gift-ritual');ritual.hidden=true;ritual.setAttribute('aria-label','许愿和吹蜡烛');
   const ritualNote=el('p','gift-ritual-note','给自己留一个小小的愿望吧。'),wish=el('button','gift-wish','闭上眼睛，许个愿');wish.type='button';ritual.append(ritualNote,wish);
+  const micArea=el('div','gift-mic-area'),micButton=el('button','gift-mic-button','对着手机吹气 · 开启麦克风'),micNote=el('p','gift-mic-note','可选：声音只在本机判断，不录音、不上传。吹灭或离开后自动关麦。嘈杂时可能误判。'),micStatus=el('p','gift-mic-status'),meter=el('meter','gift-mic-meter');
+  micButton.type='button';micButton.setAttribute('aria-pressed','false');micStatus.setAttribute('role','status');meter.min=0;meter.max=1;meter.value=0;meter.hidden=true;meter.setAttribute('aria-label','吹气进度');micArea.hidden=true;micArea.append(micButton,micNote,micStatus,meter);ritual.append(micArea);
+  const mic=window.CakeGiftMic?.create({alive:()=>root.isConnected&&root.contains(ritual)&&(!root.closest('dialog')||root.closest('dialog').open),onStatus(state,text){const active=['requesting','calibrating','listening'].includes(state);micButton.textContent=active?'取消吹气 · 关闭麦克风':'对着手机吹气 · 开启麦克风';micButton.setAttribute('aria-pressed',String(active));meter.hidden=!['calibrating','listening'].includes(state);micStatus.textContent=text;},onLevel(level){meter.value=level;},onBlow:()=>blowOut()});
+  micButton.addEventListener('click',()=>{if(phase!=='wishing')return;if(!mic){micStatus.textContent='这个浏览器暂时不能开麦，点上面的按钮一样能吹灭。';return;}if(mic.active)mic.stop('麦克风已关闭，可以继续点按钮吹灭。');else mic.start();});
   const letter=el('section','gift-letter');letter.hidden=true;letter.setAttribute('aria-label','送给你的祝福');letter.tabIndex=-1;
   letter.append(el('p','gift-eyebrow','这一刻，愿望交给烛光'),el('h2','',p.title),el('p','gift-message',p.message),el('p','gift-signature',p.signature?'—— '+p.signature:''));
   const status=el('p','gift-status');status.setAttribute('role','status');
@@ -23,7 +29,8 @@
   function position(q){candle.style.left=q.x+'%';candle.style.top=q.y+'%';candle.style.width=q.size+'%';}
   position(p.candle);
   function clearEffects(){clearTimeout(effectTimer);effectTimer=null;smoke.replaceChildren();confetti.replaceChildren();}
-  function reset(){phase='unlit';clearEffects();root.classList.remove('is-lit','is-blown');candle.setAttribute('aria-pressed','false');candle.setAttribute('aria-label',editable?'收礼蜡烛的位置':'点亮蜡烛，打开祝福');letter.hidden=true;ritual.hidden=true;wish.hidden=false;wish.textContent='闭上眼睛，许个愿';ritualNote.textContent='给自己留一个小小的愿望吧。';replay.hidden=true;status.textContent='';hint.textContent=editable?'点蛋糕顶面，挑一个放蜡烛的位置':'轻轻点亮蜡烛，拆开这份祝福。';}
+  disposers.set(root,()=>{mic?.stop();clearEffects();});
+  function reset(){mic?.stop();micArea.hidden=true;phase='unlit';clearEffects();root.classList.remove('is-lit','is-blown');candle.setAttribute('aria-pressed','false');candle.setAttribute('aria-label',editable?'收礼蜡烛的位置':'点亮蜡烛，打开祝福');letter.hidden=true;ritual.hidden=true;wish.hidden=false;wish.textContent='闭上眼睛，许个愿';ritualNote.textContent='给自己留一个小小的愿望吧。';replay.hidden=true;status.textContent='';hint.textContent=editable?'点蛋糕顶面，挑一个放蜡烛的位置':'轻轻点亮蜡烛，拆开这份祝福。';}
   function celebrate(){clearEffects();if(reduced())return;
    for(let i=0;i<4;i++){const puff=el('i');puff.style.setProperty('--puff-delay',i*.18+'s');puff.style.setProperty('--puff-drift',(i%2?14:-12)+'px');smoke.append(puff);}
    const colors=['#e9a3a3','#f0cf75','#9fc8b4','#adc4e7','#d0b6dd'];
@@ -31,7 +38,8 @@
    effectTimer=setTimeout(clearEffects,4300);
   }
   candle.addEventListener('click',()=>{if(editable||phase!=='unlit')return;phase='lit';root.classList.add('is-lit');candle.setAttribute('aria-pressed','true');candle.setAttribute('aria-label','蜡烛已点亮');letter.hidden=false;ritual.hidden=false;replay.hidden=false;hint.textContent='蜡烛亮了，先悄悄许个愿。';status.textContent='祝福已展开，可以许愿了';wish.focus({preventScroll:true});ritual.scrollIntoView({behavior:reduced()?'instant':'smooth',block:'nearest'});});
-  wish.addEventListener('click',()=>{if(phase==='lit'){phase='wishing';ritualNote.textContent='不用说出来，愿望只留在你心里。准备好了，就轻轻吹灭它。';wish.textContent='许好啦，吹灭蜡烛';status.textContent='慢慢许愿，准备好后点击吹灭蜡烛';return;}if(phase!=='wishing')return;phase='blown';root.classList.remove('is-lit');root.classList.add('is-blown');candle.setAttribute('aria-pressed','false');candle.setAttribute('aria-label','蜡烛已吹灭');hint.textContent='呼——愿你的心愿，慢慢成真。';ritualNote.textContent='愿望交给小小的烟，祝福留在这里。';wish.hidden=true;status.textContent='蜡烛吹灭了，愿你的心愿成真';celebrate();candle.focus({preventScroll:true});stage.scrollIntoView({behavior:reduced()?'instant':'smooth',block:'center'});});
+  function blowOut(){if(phase!=='wishing')return;mic?.stop();micArea.hidden=true;phase='blown';root.classList.remove('is-lit');root.classList.add('is-blown');candle.setAttribute('aria-pressed','false');candle.setAttribute('aria-label','蜡烛已吹灭');hint.textContent='呼——愿你的心愿，慢慢成真。';ritualNote.textContent='愿望交给小小的烟，祝福留在这里。';wish.hidden=true;status.textContent='蜡烛吹灭了，愿你的心愿成真';celebrate();candle.focus({preventScroll:true});stage.scrollIntoView({behavior:reduced()?'instant':'smooth',block:'center'});}
+  wish.addEventListener('click',()=>{if(phase==='lit'){phase='wishing';ritualNote.textContent='不用说出来，愿望只留在你心里。准备好了，就轻轻吹灭它。';wish.textContent='许好啦，吹灭蜡烛';micArea.hidden=false;status.textContent='慢慢许愿，准备好后点击吹灭蜡烛，或自愿开启麦克风吹气';return;}blowOut();});
   replay.addEventListener('click',()=>{reset();candle.focus({preventScroll:true});stage.scrollIntoView({behavior:reduced()?'instant':'smooth',block:'center'});});
   if(editable){candle.setAttribute('aria-label','收礼蜡烛的位置');cake.addEventListener('click',e=>onPosition?.(e,stage,position));}
   return {reset,position};
