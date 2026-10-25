@@ -1,9 +1,9 @@
 {
   "name": "cake-studio",
-  "version": "0.16.2",
+  "version": "0.17.0",
   "private": true,
   "scripts": {
     "start": "node server.cjs",
-    "test": "node --test tests/core.test.cjs tests/gesture.test.cjs tests/audio.test.cjs tests/tiers.test.cjs tests/pour.test.cjs tests/pour-art.test.cjs tests/plating-mix.test.cjs tests/thick-glaze.test.cjs tests/cloud.test.cjs tests/cloud-client.test.cjs tests/gifts.test.cjs tests/gift-ritual.test.cjs tests/gift-mic.test.cjs"
+    "test": "node --test tests/core.test.cjs tests/gesture.test.cjs tests/audio.test.cjs tests/tiers.test.cjs tests/pour.test.cjs tests/pour-art.test.cjs tests/plating-mix.test.cjs tests/thick-glaze.test.cjs tests/cloud.test.cjs tests/cloud-client.test.cjs tests/gifts.test.cjs tests/gift-ritual.test.cjs tests/gift-mic.test.cjs tests/piping.test.cjs"
   }
 }

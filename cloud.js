@@ -9,7 +9,7 @@
  const urls=new Map();
  const account=()=>user?.id||null;
  function errorMessage(e){const m=e?.message||String(e);if(/fetch|network|offline/i.test(m))return '暂时连不上云端，作品仍保存在本机；联网后可重试。';if(/rate|too many/i.test(m))return '请求有点频繁，请稍等一分钟再试。';if(/token.*expired|otp.*invalid/i.test(m))return '验证码无效或已过期，请重新获取。';return m;}
- function setStatus(text){status=text;$('#account-btn').textContent=user?'我的云存档':'云存档';$('#account-btn').title=text;const el=$('#cloud-status');if(el)el.textContent=text;}
+ function setStatus(text){status=text;$('#account-btn').setAttribute('aria-label',user?'我的账号与云同步':'登录与云同步');$('#account-btn').dataset.connected=user?'true':'false';$('#account-btn').title=text;const el=$('#cloud-status');if(el)el.textContent=text;}
  function modal(html,section='account'){mode=section;$('#community-content').innerHTML=html;if(!$('#community-dialog').open)$('#community-dialog').showModal();}
  function close(){$('#community-dialog').close();}
  function changed(){if(!user||locked)return;saveMeta({...activeMeta,dirty:true});setStatus('已存本机 · 等待同步');clearTimeout(timer);timer=setTimeout(()=>sync().catch(showError),2200);}

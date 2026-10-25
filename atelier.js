@@ -1,7 +1,7 @@
 (function(){
  'use strict';
  const cloud=CakeCloud,store=CakeStore,app=CakeApp,model=CakeCloudModel,$=s=>document.querySelector(s),esc=cloud.esc;
- let page='mine',draft=null,entries=[],rows=[],nextPage=null,request=0,previewURL=null,previewVersion=0;
+ let page='author',draft=null,entries=[],rows=[],nextPage=null,request=0,previewURL=null,previewVersion=0;
  const names={private:'仅自己可见',pending:'等待审核',approved:'已公开',rejected:'需要调整'};
  const prompt=`请参考附图，为「一口小作坊」蛋糕装饰游戏制作一个独立配件。
 我要的配件是：【在这里填入你想要的东西】。
@@ -9,23 +9,25 @@
 视角：正面稍微俯视，与参考蛋糕配件一致；物体完整，底部有清晰的放置接触点。一个主体，居中，周围留少量空隙。
 输出：透明背景 PNG，约 1024×1024；不要画蛋糕、盘子、场景、地面投影、文字、水印、边框或棋盘格。不要复制参考图里的具体造型，只参考画风。
 如果不能生成透明背景，请使用纯白背景，方便游戏中的去白底工具处理。`;
- function nav(){return `<div class="atelier-nav">${[['mine','我的配件'],['upload','导入新配件'],['kit','生图小纸条'],['public','大家的配件'],...(cloud.admin?[['review','审核台']]:[])].map(([v,n])=>`<button data-atelier="${v}" class="${page===v?'active':''}">${n}</button>`).join('')}<button id="account-back">账号与云存档</button></div>`;}
- function shell(body){cloud.modal(`<div class="community-heading"><span class="eyebrow">一口小作坊 · 灵感收纳处</span><h2 id="community-title">${page==='review'?'配件审核台':'我的配件工坊'}</h2><p>${page==='review'?'看一看造型、透明边缘和放上蛋糕的效果，再决定要不要摆上公共小推车。':'让你喜欢的小东西，也来蛋糕上坐一坐。自用随时放，投稿审核后大家一起用。'}</p></div>${nav()}<div id="atelier-body">${body}</div>`,'atelier');}
- async function open(tab='mine'){
+ function nav(){return `<div class="atelier-nav">${[['author','作者配件'],['mine','我的配件'],['public','网友配件'],['upload','导入图片'],['kit','制作配件'],...(cloud.admin?[['review','审核台']]:[])].map(([v,n])=>`<button data-atelier="${v}" class="${page===v?'active':''}">${n}</button>`).join('')}<button id="account-back">账号与云存档</button></div>`;}
+ function shell(body){$('#pantry-content').innerHTML=`${nav()}<div id="atelier-body">${body}</div>`;}
+ async function open(tab='author',embedded=false){
+  if(!embedded){cloud.close();app.showPage('pantry');}
   page=tab;if(draft?.reviewOnly)draft=null;const ticket=++request,scope=store.key;shell('<p class="community-note">正在打开小柜子…</p>');
   try{
-   if(tab==='upload')return uploadForm();if(tab==='kit')return kit();
+   if(tab==='author')return author();if(tab==='upload')return uploadForm();if(tab==='kit')return kit();
    if(tab==='review'){if(!cloud.admin)throw Error('只有审核员可以打开这里');const {data,error}=await cloud.client.from('cake_assets').select('*').in('status',['pending','approved']).order('created_at',{ascending:false}).limit(100);if(error)throw error;if(ticket!==request)return;rows=data;return review();}
    if(tab==='public'){rows=await cloud.rpc('cake_public_assets',{});if(ticket!==request)return;nextPage=rows.length===60?rows.at(-1).created_at:null;return publicGrid();}
    entries=await store.assets();if(ticket!==request)return;
    if(cloud.user){try{const {data,error}=await cloud.client.from('cake_assets').select('*').eq('owner_id',cloud.user.id).order('created_at',{ascending:false});if(error)throw error;for(const row of data){if(ticket!==request||scope!==store.key)return;const cached=await cloud.cacheRow(row,scope);const i=entries.findIndex(e=>e.id===cached.id);if(i<0)entries.push(cached);else entries[i]={...entries[i],row};}}catch(e){app.notify('先展示本机配件：'+cloud.errorMessage(e));}}
-   if(ticket===request)mine();
+   if(ticket===request){entries=entries.filter(a=>!a.row||cloud.user&&(a.row.owner_id===cloud.user.id||a.row.path?.startsWith(cloud.user.id+'/')));mine();}
   }catch(e){if(ticket===request)$('#atelier-body').innerHTML=`<p class="community-note">${esc(cloud.errorMessage(e))}</p>`;}
  }
+ function author(){const list=Object.entries(CakeCore.items).filter(([,a])=>a.group==='decoration'&&!a.custom);shell(`<p class="community-small">作坊里的小收藏，喜欢哪一件就带上画台。</p><div class="pantry-group author-accessories">${list.map(([k,a])=>`<button class="pantry-item" data-author-use="${k}">${CakeArt.icon(k)}<b>${esc(a.name)}</b><span>放到蛋糕上</span></button>`).join('')}</div>`);}
  function card(a,row,buttons){if(a.unavailable)return `<article class="atelier-card"><h3>${esc(a.name)}</h3><p>配件已下架或不可访问。蛋糕中的位置仍保留，其他配件和存档可以继续使用。</p></article>`;return `<article class="atelier-card"><img data-asset-image="${a.id}" alt="${esc(a.name)}"><h3>${esc(a.name)}</h3><span class="asset-status ${row?.status||'private'}">${names[row?.status]||'本机私藏'}</span>${row?.review_note?`<p>审核留言：${esc(row.review_note)}</p>`:''}<div class="community-actions">${buttons}</div></article>`;}
  async function thumbnails(list){for(const a of list){try{const entry=await store.getAsset(a.id),el=$(`[data-asset-image="${a.id}"]`);if(!entry?.blob||!el)continue;const url=URL.createObjectURL(entry.blob);el.onload=()=>URL.revokeObjectURL(url);el.onerror=()=>URL.revokeObjectURL(url);el.src=url;}catch{}}}
  function mine(){
-  shell(`<p class="atelier-count">${entries.length} 个配件 · 配件无限使用 · 登录后可同步到其他设备</p>${entries.length?`<div class="atelier-grid">${entries.map(a=>card(a,a.row,`<button data-use-asset="${a.id}" class="mint">放到蛋糕上</button>${!a.row?`<button data-upload-cloud="${a.id}">保存到云端</button>`:''}${a.row&&['private','rejected'].includes(a.row.status)?`<button data-submit-asset="${a.id}">投稿给大家</button>`:''}`)).join('')}</div>`:'<div class="community-note"><b>小柜子还空着，装点你的奇思妙想吧。</b><p>拿走生图小纸条和参考图，交给你喜欢的生图 AI，再把生成的配件带回来。</p><button data-atelier="kit" class="gold">领一份生图参考 →</button></div>'}`);thumbnails(entries);
+  shell(`<p class="atelier-count">${entries.length} 个配件 · 登录后可同步到其他设备</p>${entries.length?`<div class="atelier-grid">${entries.map(a=>card(a,a.row,`<button data-use-asset="${a.id}" class="mint">放到蛋糕上</button>${!a.row?`<button data-upload-cloud="${a.id}">保存到云端</button>`:''}${a.row&&['private','rejected'].includes(a.row.status)?`<button data-submit-asset="${a.id}">投稿给大家</button>`:''}`)).join('')}</div>`:'<div class="community-note"><b>小柜子还空着，装点你的奇思妙想吧。</b><p>拿走生图小纸条和参考图，交给你喜欢的生图 AI，再把生成的配件带回来。</p><button data-atelier="kit" class="gold">领一份生图参考 →</button></div>'}`);thumbnails(entries);
  }
  function uploadForm(){shell(`<div class="atelier-layout"><div><div class="atelier-board"><canvas id="asset-preview" width="520" height="420" aria-label="配件放上蛋糕的预览"></canvas></div><p class="community-small" id="asset-info">支持 PNG、WebP、JPEG；建议透明背景，文件不超过 5 MB。</p></div><div class="atelier-form"><h3>把小配件带进来</h3><label>选择图片<input class="atelier-file" id="asset-file" type="file" accept="image/png,image/webp,image/jpeg"></label><label>配件名字<input id="asset-name" maxlength="24" placeholder="例如：困困小猫糖片" value="${esc(draft?.name||'')}"></label><label>在蛋糕上的大小<input id="asset-size" type="range" min="25" max="150" value="${draft?.width||80}"></label><label>底部落点<input id="asset-anchor" type="range" min="10" max="100" value="${Math.round((draft?.anchor||.9)*100)}"></label><label class="upload-consent"><input id="asset-white" type="checkbox">去除与边缘相连的近白背景（白色配件建议使用透明原图）</label><button id="asset-process" class="soft" ${draft?'':'disabled'}>重新整理边缘</button><div class="community-actions"><button id="asset-save" class="gold" ${draft?'':'disabled'}>收进我的配件柜</button></div><p class="community-small">保存后立即能用。先只保存在你的柜子里，投稿由你另行选择。</p></div></div>`);paintPreview();}
  async function process(file,removeWhite=false){
@@ -47,7 +49,7 @@
  }
  function previewAsset(){let w=Math.max(12,Math.min(150,Number($('#asset-size')?.value)||draft.width||80)),h=w*draft.ratio;if(h>180){w*=180/h;h=180;}return model.asset({id:draft.id,name:$('#asset-name')?.value.trim()||draft.name||'新配件',size:[Math.max(12,w),Math.max(12,h)],anchor:$('#asset-anchor')?Number($('#asset-anchor').value)/100:draft.anchor||.9});}
  async function selectFile(file){const normalized=await process(file,$('#asset-white').checked);draft={...normalized,file,id:'custom_'+crypto.randomUUID(),name:'',width:80,anchor:.9};$('#asset-process').disabled=false;$('#asset-save').disabled=false;$('#asset-info').textContent=normalized.transparent<.01?'图片没有透明背景。可以勾选去白底，先看看边缘效果再保存。':'透明边缘已整理好，调整大小和底部落点就能用。';await paintPreview();}
- async function save(){if(!draft)throw Error('先选择一张图片');const a=previewAsset();if(!$('#asset-name').value.trim())throw Error('给它起个名字吧');await store.putAsset({...a,blob:draft.blob});await cloud.loadImage(a,draft.blob);app.addAsset(a);draft=null;await open('mine');app.notify('配件收好啦，可以无限次放上蛋糕。');}
+ async function save(){if(!draft)throw Error('先选择一张图片');const a=previewAsset();if(!$('#asset-name').value.trim())throw Error('给它起个名字吧');await store.putAsset({...a,blob:draft.blob});await cloud.loadImage(a,draft.blob);app.addAsset(a);draft=null;await open('mine');app.notify('配件收好啦，去蛋糕上试试吧。');}
  async function kit(){shell(`<div class="reference-strip"><img src="assets/berry.png" alt="草莓配件参考"><img src="assets/flower.png" alt="糖花配件参考"><img src="assets/extras/cream-rose.png" alt="奶油花参考"></div><label>把括号里的内容换成你的想法<textarea id="asset-prompt" rows="10">${esc(prompt)}</textarea></label><div class="community-actions"><button id="kit-copy" class="gold">复制提示词 + 参考图</button><button id="kit-download">下载参考图</button><button data-atelier="upload" class="mint">生成好了，导入配件 →</button></div><p id="kit-note" class="community-small">部分聊天软件一次只能粘贴文字或图片；也可以单独下载参考图，再和提示词一起发给生图 AI。</p>`);}
  async function reference(){const c=document.createElement('canvas');c.width=1024;c.height=512;const ctx=c.getContext('2d');ctx.fillStyle='#fff9ed';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#805a42';ctx.font='28px sans-serif';ctx.fillText('蛋糕装饰 · 画风参考',50,65);const list=['berry','flower','extras/cream-rose'];await CakeArt.loaded;list.forEach((k,i)=>CakeArt.image(ctx,k,75+i*310,130,240,260));return new Promise(r=>c.toBlob(r,'image/png'));}
  async function copyKit(){const text=$('#asset-prompt').value,blob=await reference();try{if(!window.ClipboardItem)throw Error('clipboard');await navigator.clipboard.write([new ClipboardItem({'text/plain':new Blob([text],{type:'text/plain'}),'image/png':blob})]);$('#kit-note').textContent='提示词和参考图已复制。去你的生图 AI 粘贴吧！';}catch{try{await navigator.clipboard.writeText(text);downloadBlob(blob,'蛋糕配件画风参考.png');$('#kit-note').textContent='提示词已复制，参考图已下载；把这两样一起发给生图 AI。';}catch{$('#asset-prompt').select();$('#kit-note').textContent='浏览器不允许自动复制，请长按或 Ctrl+C 复制选中的提示词，再点下载参考图。';}}}
@@ -62,7 +64,7 @@
  document.addEventListener('input',e=>{if(['asset-size','asset-anchor'].includes(e.target.id))paintPreview().catch(e=>app.notify(e.message));});
  document.addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b||b.disabled)return;const d=b.dataset,id=b.id;
-  if(id==='atelier-btn')return open();if(id==='moderation-open')return open('review');if(d.atelier)return open(d.atelier);
+  if(d.authorUse){app.useBuiltin(d.authorUse);return;}if(id==='moderation-open')return open('review');if(d.atelier)return open(d.atelier);
   if(!id.startsWith('asset-')&&!id.startsWith('kit-')&&!id.startsWith('public-')&&!id.startsWith('review-')&&!['useAsset','uploadCloud','submitAsset','publicUse','reviewPreview','reviewApprove','reviewReject'].some(k=>d[k]))return;
   b.disabled=true;try{
    if(id==='asset-process'){if(draft){const p=await process(draft.file,$('#asset-white').checked);Object.assign(draft,p);await paintPreview();}}
@@ -78,6 +80,6 @@
    if(id==='review-confirm'){await cloud.rpc('cake_asset_review',{asset_id:d.reviewId,decision:d.reviewDecision,note:$('#review-note').value.trim()});await open('review');app.notify('审核结果已保存。');}
   }catch(e){app.notify(cloud.errorMessage(e));}finally{b.disabled=false;}
  });
- window.addEventListener('cake-account-change',()=>{draft=null;entries=[];rows=[];request++;});
- window.CakeAtelier={open,process};
+ window.addEventListener('cake-account-change',()=>{draft=null;entries=[];rows=[];request++;if($('#pantry').classList.contains('active'))open('author',true);});
+ window.CakeAtelier={open,process,render(){if(!$('#atelier-body'))open(page,true);}};
 })();
