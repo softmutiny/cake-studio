@@ -13,6 +13,7 @@
  function mesh(s,field=new Map(),stream=null){
   // Rewind the mutable tail: density uses two neighbours, whose lengths
   // depend on one further point. Earlier deposits are immutable while drawing.
+  const owner=s.owner||s;
   const start=stream?Math.max(0,(stream.count||0)-4):0,out=stream?.out||[],cell=5;
   if(stream){for(let i=(stream.journal?.length||0)-1;i>=start;i--)for(const [key,old]of stream.journal[i]){if(old===undefined)field.delete(key);else field.set(key,old);}stream.journal=(stream.journal||[]).slice(0,start);stream.travel=(stream.travel||[]).slice(0,start);out.length=start;}
   const lengths=[];for(let i=Math.max(0,start-2);i<s.points.length;i++){const p=s.points[i],a=i&&!p.break?s.points[i-1]:p,b=s.points[i+1]&&!s.points[i+1].break?s.points[i+1]:p;lengths[i]=(Math.hypot((p.u-a.u)*180,(p.v-a.v)*180)+Math.hypot((b.u-p.u)*180,(b.v-p.v)*180))*.5;}
@@ -30,11 +31,11 @@
    let support=0;const cells=[];
    for(let cx=Math.floor((x-r)/cell);cx<=Math.ceil((x+r)/cell);cx++)for(let cy=Math.floor((y-r)/cell);cy<=Math.ceil((y+r)/cell);cy++){
     const distance=Math.hypot(cx*cell-x,cy*cell-y);if(distance>r+cell*.5)continue;const key='flow:'+cx+','+cy,old=field.get(key);cells.push([key,distance]);
-    if(old&&distance<r*.55+cell*.5)support=Math.max(support,old.owner===s&&travel-old.travel<s.size*2.5?old.base:old.h);
+    if(old&&distance<r*.55+cell*.5)support=Math.max(support,old.owner===owner&&travel-old.travel<s.size*2.5?old.base:old.h);
    }
    // Compress supported cream gently instead of growing a rigid vertical column.
    support=Math.max(support,s.baseAt?.(p)||0);support*=.94*(1-flat);const body={x,y,u:p.u,v:p.v,r,h,z:support,break:p.break,mound,...(flat?{flat}:{})};out.push(body);
-   for(const [key,distance]of cells){const crown=Math.sqrt(Math.max(0,1-(distance/(r+cell*.5))**2));const old=field.get(key);const height=support+h*crown;if(!old||height>=old.h){if(stream)changes.push([key,old]);field.set(key,{h:height,base:support,owner:s,travel});}}
+   for(const [key,distance]of cells){const crown=Math.sqrt(Math.max(0,1-(distance/(r+cell*.5))**2));const old=field.get(key);const height=support+h*crown;if(!old||height>=old.h){if(stream)changes.push([key,old]);field.set(key,{h:height,base:support,owner,travel});}}
    if(stream){stream.journal.push(changes);stream.travel.push(travel);}
    previous={x,y};
   }

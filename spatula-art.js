@@ -19,10 +19,5 @@ function raster(f,g,surface,quality=2){const a=shade(f,surface,g.shape),key=[g.x
  }}ctx.putImageData(image,0,0);const result={canvas:c,x:g.x-g.rx-pad,y:yOrigin,scale};if(a.projections.size>3)a.projections.clear();a.projections.set(key,result);return result;
 }
 function draw(ctx,d,level,g,surface,quality=2){const l=d.layers[level-1],f=I.fieldOf(l,surface)||legacyField(l,surface,g);if(!f||surface==='side'&&g.view==='top')return;const r=raster(f,g,surface,quality);ctx.save();ctx.imageSmoothingEnabled=true;ctx.drawImage(r.canvas,r.x,r.y,r.canvas.width/r.scale,r.canvas.height/r.scale);ctx.restore();}
-function cursor(ctx,session,p,view){if(!session)return false;const sp=session.sp,top=view==='top',ratio=top?1:.38,angle=sp.a+Math.PI/2+.42,bx=Math.cos(angle),by=Math.sin(angle)*ratio,nx=Math.cos(sp.a),ny=Math.sin(sp.a)*ratio,len=sp.length;ctx.save();ctx.translate(p.x,p.y);ctx.lineJoin='round';ctx.lineCap='round';
- ctx.beginPath();ctx.moveTo(-bx*len/2+3,-by*len/2+4);ctx.lineTo(bx*len/2+3,by*len/2+4);ctx.strokeStyle='#60453033';ctx.lineWidth=13;ctx.stroke();
- ctx.beginPath();ctx.moveTo(-nx*7,-ny*7);ctx.lineTo(-nx*(len*.45+28),-ny*(len*.45+28));ctx.lineWidth=15;ctx.strokeStyle='#75523e';ctx.stroke();ctx.lineWidth=10;ctx.strokeStyle='#c29164';ctx.stroke();
- const grad=ctx.createLinearGradient(-8,-8,8,8);grad.addColorStop(0,'#f4f6f7');grad.addColorStop(.5,'#b9c2c8');grad.addColorStop(1,'#e3e7ea');ctx.beginPath();ctx.moveTo(-bx*len/2,-by*len/2);ctx.lineTo(bx*len/2,by*len/2);ctx.lineWidth=11;ctx.strokeStyle='#85796b';ctx.stroke();ctx.lineWidth=8;ctx.strokeStyle=grad;ctx.stroke();
- let total=0,col=[0,0,0];for(let k=0;k<sp.S;k++){total+=sp.carry[k];for(let j=0;j<3;j++)col[j]+=sp.carry[k]*sp.colors[k*3+j];}if(total>.01){col=col.map(v=>Math.round(v/total));ctx.fillStyle=`rgb(${col})`;ctx.beginPath();for(let k=0;k<sp.S;k+=2){const off=(k/(sp.S-1)-.5)*len,r=Math.min(12,Math.sqrt(sp.carry[k])*.7);const x=bx*off+nx*(4+r),y=by*off+ny*(4+r);k?ctx.lineTo(x,y):ctx.moveTo(x,y);}for(let k=sp.S-1;k>=0;k-=2){const off=(k/(sp.S-1)-.5)*len;ctx.lineTo(bx*off+nx*3,by*off+ny*3);}ctx.closePath();ctx.fill();}ctx.restore();return true;}
-window.CakeSpatulaArt={draw,cursor,raster,shade};
+window.CakeSpatulaArt={draw,raster,shade};
 })();
