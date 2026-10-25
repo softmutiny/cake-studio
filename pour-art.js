@@ -42,7 +42,7 @@ function rimMap(a,g){const key=[g.shape,g.rx].join(':');if(maps.has(key))return 
  for(let i=0;i<W;i++){const r=a.rim[i],n=a.rim[(i+1)%W],du=n.u-r.u;if(Math.abs(du)<1e-9)continue;const t=(u-r.u)/du;if(t<0||t>1)continue;const candidate=r.v+(n.v-r.v)*t;if(candidate>v){v=candidate;arc=i+t;}}
  // Smooth polygon normals across segment boundaries, including square corners.
  const ix=Math.floor(arc)%W,t=arc-Math.floor(arc);function normal(i){const before=a.rim[(i+W-1)%W],after=a.rim[(i+1)%W],len=Math.hypot(after.u-before.u,after.v-before.v)||1;return {x:(after.v-before.v)/len,y:-(after.u-before.u)/len};}const n=normal(ix),m=normal((ix+1)%W),nx=n.x*(1-t)+m.x*t,nv=n.y*(1-t)+m.y*t,len=Math.hypot(nx,nv)||1;map.push({u,v,arc,nx:nx/len,nv:nv/len});
- }const first=map.find(r=>Number.isFinite(r.v)),last=map.findLast(r=>Number.isFinite(r.v));if(first&&last)for(let i=0;i<map.length;i++)if(!Number.isFinite(map[i].v))map[i]=i<map.length/2?first:last;maps.set(key,map);return map;
+ }const first=map.find(r=>Number.isFinite(r.v)),last=map.findLast(r=>Number.isFinite(r.v));if(first&&last)for(let i=0;i<map.length;i++)if(!Number.isFinite(map[i].v))map[i]=i<map.length/2?first:last;if(maps.size>=16)maps.delete(maps.keys().next().value);maps.set(key,map);return map;
 }
 function sideImage(a,p,g,scale){
  const height=g.tierHeight||g.height,key=['side',g.rx,g.ry,height,scale].join(':');if(a.projections.has(key))return a.projections.get(key);

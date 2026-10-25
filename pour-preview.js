@@ -14,7 +14,7 @@ function launch(){
 function ensure(){
  if(failed)return false;if(worker)return true;
  if(typeof Worker==='undefined'||typeof OffscreenCanvas==='undefined'){failed=true;return false;}
- try{worker=new Worker('pour-worker.js?v=0.24.1');worker.onerror=fail;worker.onmessage=({data})=>{
+ try{worker=new Worker('pour-worker.js?v=0.24.2');worker.onerror=fail;worker.onmessage=({data})=>{
   const r=inFlight;inFlight=null;if(data.error){fail();return;}
   if(!r||r.id!==data.id){for(const v of Object.values(data.result||{}))v?.canvas.close();launch();return;}
   dispose(r);r.result=data.result;r.revision=data.revision;
