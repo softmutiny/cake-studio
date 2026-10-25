@@ -51,3 +51,30 @@
  .mobile-dock button:first-child{font-size:13px}.view-controls{height:94px;min-height:94px;flex-basis:94px}
 }
 @media(prefers-reduced-motion:reduce){button{transition:none}}
+
+/* Cream Blocks: a balanced three-part desk, with a true overhead tabletop. */
+#overhead-backdrop{position:fixed;inset:0;z-index:-1;pointer-events:none;background:#e8bb7f url('assets/tabletop-overhead.png') center/cover;transform-origin:0 0;opacity:0;transition:opacity .18s}
+body:has(#workshop.active #view-top[aria-pressed=true]) #overhead-backdrop{opacity:1}
+.camera-options{position:relative;font-size:13px}.camera-options>summary{cursor:pointer;border:1px solid #cdb08a;border-radius:10px;padding:9px;background:#fff8e8;white-space:nowrap;min-height:38px}
+.camera-options>div{position:absolute;z-index:32;right:0;top:calc(100% + 6px);width:174px;display:grid;gap:7px;padding:10px;border:1px solid #cdb08a;border-radius:14px;background:#fff7e8;box-shadow:0 8px 22px #70422230}
+.camera-options button{width:100%;min-height:40px}.surface-choice{margin:12px 0}.surface-auto{width:100%;font-size:14px;min-height:38px;padding:7px;background:#eef2df;border:1px solid #a7b89b;box-shadow:none}
+.surface-auto.active{background:#d7ead8;border-color:#8eae8a}.surface-advanced{font-size:12px;color:#8f7053;margin-top:9px}.surface-advanced summary{cursor:pointer;padding:5px 0}.surface-modes{margin:7px 0}
+.structure-collapse{display:none}
+@media(min-width:901px){
+ #workshop.active{grid-template-columns:220px minmax(0,1fr) 310px;gap:14px}
+ #structure-panel{display:flex;position:static;height:100%;width:auto;min-height:0;max-height:none;padding:14px}
+ .structure-collapse{display:block;align-self:flex-end;font-size:12px;min-height:32px;padding:5px 9px;margin-bottom:9px;box-shadow:none;background:#f4e7cd;border:1px solid #cfad77}
+ #structure-panel .tray-close,.desktop-structure{display:none}
+ .structure .panel-head{margin-bottom:8px}.structure .panel-head h2{font-size:22px}.structure .tiny-intro{font-size:11px}
+ .structure #layer-list{flex:1;min-height:100px;max-height:none;margin:12px 0}.layer-row{padding:6px;gap:5px}.layer-row b{font-size:13px}.layer-row small{font-size:10px}.layer-row .icon{width:34px;height:32px}
+ .structure-bottom p,.layer-actions p{font-size:11px;line-height:1.65}.structure-bottom button{font-size:14px}.layer-actions button{font-size:13px}
+ body.structure-collapsed #workshop.active{grid-template-columns:minmax(0,1fr) 310px}
+ body.structure-collapsed #structure-panel{display:none}body.structure-collapsed .desktop-structure{display:inline-block}
+ .view-controls{justify-content:center}.view-controls label[for=view-zoom]{flex:0 1 auto}.view-controls label{font-size:12px}.view-controls input{max-width:75px}
+ .toolbox button{min-width:0;font-size:11px;padding:4px 2px}.toolbox button span img{width:33px;height:33px}
+ .toolbox{padding:6px 4px;flex-basis:69px;min-height:69px}.interaction-tip{font-size:11px}
+ .worktable.expanded{background:#fff4de55}.worktable.expanded .canvas-wrap{min-height:200px}
+}
+@media(min-width:901px) and (max-width:1190px){#workshop.active{grid-template-columns:190px minmax(0,1fr) 278px;gap:10px}.app{padding-left:12px;padding-right:12px}.ingredients{padding:13px}.toolbox button{font-size:10px}.toolbox button span img{width:28px;height:28px}.structure .panel-head h2{font-size:19px}}
+@media(max-width:900px){.camera-options>summary{min-height:40px;padding:10px 8px;font-size:12px}.view-controls{height:94px;min-height:94px;flex-basis:94px}.camera-options>div{right:-20px}.surface-choice{margin:5px 0}.surface-auto{min-height:40px}.surface-advanced{margin-top:4px}}
+@media(prefers-reduced-motion:reduce){#overhead-backdrop{transition:none}}

@@ -1,5 +1,13 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
 const Core=require('../core.js');
+
+test('实际鼠标无需指定表面即可摆到顶面、侧边、盘沿并拖回顶面',()=>{
+ const h=setup();h.click({item:'vanilla'});h.click({category:'decoration'});h.click({item:'berry'});
+ for(const [x,y]of [[330,380],[380,482],[589,450]]){h.callbacks['#cake-canvas:pointerdown'](h.point(x,y));h.callbacks['#cake-canvas:pointerup'](h.point(x,y));}
+ assert.deepEqual(h.state().draft.decos.map(d=>d.surface),['top','side','plate']);
+ h.click({tool:'move'});h.callbacks['#cake-canvas:pointerdown'](h.point(589,450));h.callbacks['#cake-canvas:pointermove'](h.point(430,390));h.callbacks['#cake-canvas:pointerup'](h.point(430,390));
+ assert.equal(h.state().draft.decos[2].surface,'top');assert.equal(h.state().draft.decos[2].level,1);assert.ok(Core.validate(h.state()));
+});
 test('工具一次选中即用，淋奶盖设置不混入花嘴，铺层单独选择',()=>{
  const h=setup();h.click({item:'vanilla'});h.click({tool:'pour'});let html=h.nodes.get('#material-content').innerHTML;assert.match(html,/奶壶已拿好/);assert.match(html,/id="pour-rate"/);assert.doesNotMatch(html,/id="brush-size"|data-nozzle/);
  h.click({tool:'pipe'});html=h.nodes.get('#material-content').innerHTML;assert.match(html,/id="brush-size"/);assert.doesNotMatch(html,/id="pour-rate"/);

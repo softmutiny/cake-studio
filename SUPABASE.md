@@ -8,7 +8,7 @@
 2. 在 `cloud-config.js` 填入项目 URL 和 **publishable key**。`shareBaseUrl` 填自己的正式网页目录（HTTPS、末尾带 `/`），让本机制作也生成正式链接；留空则使用当前页面目录。不要放 secret key、service_role、数据库密码或 SMTP 密码。
 3. Auth → URL Configuration：将 Site URL 设为部署的完整网址，只添加实际使用的重定向地址。本地调试可添加 `http://127.0.0.1:4173/`。
 4. Auth → Emails → SMTP：设置自己的发信服务。内置测试发信服务不能给普通玩家开放使用。Gmail 应用专用密码可用于小规模起步；面向更多玩家时建议迁移至事务邮件服务并配置自有域名。
-5. Magic link or OTP 和 Confirm sign up 邮件模板都应包含 `{{ .Token }}`，网页使用数字验证码完成登录。建议标题为「一口小作坊 · 登录验证码」。
+5. Magic link or OTP 和 Confirm sign up 邮件模板都应包含 `{{ .Token }}`，网页使用数字验证码完成登录。建议标题为「奶油积木 · 登录验证码」。
 6. 首位审核员先在游戏里完成邮箱验证。项目管理员在 SQL 编辑器执行下列语句，将占位符替换为该账号真实的 UUID（不需要公开邮箱）：
 
 ```sql

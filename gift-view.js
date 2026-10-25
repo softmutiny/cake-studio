@@ -8,7 +8,7 @@
   root.replaceChildren();root.className='gift-view';root.style.setProperty('--gift-paper',theme.paper);root.style.setProperty('--gift-ink',theme.ink);root.style.setProperty('--gift-accent',p.accent);
   let phase='unlit',effectTimer=null;
   const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const intro=el('div','gift-intro'),eyebrow=el('p','gift-eyebrow','一口小作坊 · 为你留的一点甜'),heading=el('h1','',p.recipient?'给 '+p.recipient+' 的小蛋糕':'有人为你做了一只蛋糕'),hint=el('p','gift-hint',editable?'点蛋糕顶面，挑一个放蜡烛的位置':'轻轻点亮蜡烛，拆开这份祝福。');intro.append(eyebrow,heading,hint);
+  const intro=el('div','gift-intro'),eyebrow=el('p','gift-eyebrow','奶油积木 · 为你留的一点甜'),heading=el('h1','',p.recipient?'给 '+p.recipient+' 的小蛋糕':'有人为你做了一只蛋糕'),hint=el('p','gift-hint',editable?'点蛋糕顶面，挑一个放蜡烛的位置':'轻轻点亮蜡烛，拆开这份祝福。');intro.append(eyebrow,heading,hint);
   const stage=el('div','gift-stage'),cake=el('img','gift-cake');cake.src=p.image;cake.alt=p.cakeName;cake.draggable=false;
   const candle=el('button','gift-candle');candle.type='button';candle.setAttribute('aria-label','点亮蜡烛，打开祝福');candle.setAttribute('aria-pressed','false');
   const body=el('img','gift-candle-body');body.src='assets/gift/candle-unlit.png';body.alt='';body.draggable=false;

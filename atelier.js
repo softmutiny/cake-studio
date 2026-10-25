@@ -3,7 +3,7 @@
  const cloud=CakeCloud,store=CakeStore,app=CakeApp,model=CakeCloudModel,$=s=>document.querySelector(s),esc=cloud.esc;
  let page='author',draft=null,entries=[],rows=[],nextPage=null,request=0,previewURL=null,previewVersion=0;
  const names={private:'仅自己可见',pending:'等待审核',approved:'已公开',rejected:'需要调整'};
- const prompt=`请参考附图，为「一口小作坊」蛋糕装饰游戏制作一个独立配件。
+ const prompt=`请参考附图，为「奶油积木」蛋糕装饰游戏制作一个独立配件。
 我要的配件是：【在这里填入你想要的东西】。
 画风：清爽微缩卡通，柔软的奶油与糖塑质感，低饱和暖色、干净饱满的色块、细而柔和的暖棕轮廓，适量高光与轻微体积阴影。可爱但不要过度写实，不要黏土噪点、硬塑料或厚重油画笔触。
 视角：正面稍微俯视，与参考蛋糕配件一致；物体完整，底部有清晰的放置接触点。一个主体，居中，周围留少量空隙。

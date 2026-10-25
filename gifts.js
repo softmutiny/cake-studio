@@ -1,6 +1,6 @@
 (function(){
  'use strict';const M=CakeGiftModel,$=s=>document.querySelector(s),C=CakeCloud;const shareBase=()=>M.shareBase(window.CAKE_CLOUD_CONFIG?.shareBaseUrl,document.baseURI);let pending=null,epoch=0;
- function shell(title,body){C.modal('<div class="gift-editor"><div class="community-heading"><span class="eyebrow">一口小作坊 · 把甜送出去</span><h2 id="community-title">'+C.esc(title)+'</h2></div>'+body+'</div>','gifts');}
+ function shell(title,body){C.modal('<div class="gift-editor"><div class="community-heading"><span class="eyebrow">奶油积木 · 把甜送出去</span><h2 id="community-title">'+C.esc(title)+'</h2></div>'+body+'</div>','gifts');}
  function failure(e){const p=$('#gift-error');if(p)p.textContent=C.errorMessage(e);else CakeApp.notify(C.errorMessage(e));}
  async function open(cake,cfg={}){
   const run=++epoch;pending={cake:JSON.parse(JSON.stringify(cake)),cfg:M.settings(cfg),id:null,data:null,position:null};

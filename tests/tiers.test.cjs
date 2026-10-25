@@ -1,6 +1,27 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');const C=require('../core.js');
 function art(){const x={CakeCore:C,window:{},Image:class{},document:{}};vm.createContext(x);vm.runInContext(fs.readFileSync(require.resolve('../renderer.js'),'utf8'),x);return x.window.CakeArt;}
 function three(){const g=new C.Game();for(const [size,item]of [[8,'vanilla'],[6,'chocolate'],[4,'tea']]){g.addLayer(item,'ivory',{size});g.addLayer('whipped','#fff3d5',{creamForm:size===8?'drip':size===6?'wave':'normal'});}return g;}
+
+test('自动落位依鼠标识别顶面、侧面和盘沿，画台空白拒绝摆放',()=>{
+ const A=art(),g=new C.Game();g.addLayer('vanilla');
+ for(const [x,y,surface]of [[380,390,'top'],[380,482,'side'],[589,450,'plate']])assert.equal(A.autoSurface(g.draft,{x,y}).surface,surface);
+ assert.equal(A.autoSurface(g.draft,{x:20,y:20}),null);
+ assert.notEqual(A.autoSurface(g.draft,{x:380,y:470})?.surface,'plate');
+});
+test('自动落位识别三层外露台阶，俯视和缩放后无需先选操作层',()=>{
+ const A=art(),g=three(),canvas={getBoundingClientRect:()=>({left:0,top:0,width:760,height:640})};
+ for(const view of ['top','perspective'])for(const zoom of [1,2.6]){
+  const cam=A.setView(canvas,g.draft,{view,zoom,panX:27,panY:-13,level:6});
+  for(const level of [2,4,6]){const p=A.project({u:level===6?0:.92,v:0},A.geometry(g.draft,level,view));const hit=A.surfacePoint(canvas,g.draft,{clientX:p.x*cam.scale+cam.tx,clientY:p.y*cam.scale+cam.ty},'auto');assert.equal(hit?.level,level);assert.equal(hit?.surface,'top');}
+ }
+});
+test('装饰跨台阶和盘子移动后保存归属，撤回恢复原位置',()=>{
+ const g=three(),d=g.addDecoration('flower',0,0,{level:6});
+ g.changeDecoration(d.id,{surface:'top',level:2,u:.9,v:0});assert.equal(g.draft.decos[0].level,2);
+ const before=JSON.stringify(g.state);assert.throws(()=>g.changeDecoration(d.id,{level:2,u:0,v:0}));assert.equal(JSON.stringify(g.state),before);
+ g.changeDecoration(d.id,{surface:'plate',level:0,u:.95,v:0});assert.equal(new C.Game(g.state).draft.decos[0].level,0);
+ g.undo();assert.equal(g.draft.decos[0].level,2);assert.equal(g.draft.decos[0].surface,'top');
+});
 test('8/6/4 真尺寸继承到奶油、剖面与刷新；撤回和退款保持库存',()=>{const g=three();assert.deepEqual(C.tiers(g.draft).map(t=>t.size),[8,6,4]);assert.deepEqual(g.draft.layers.filter(l=>l.kind==='cream').map(l=>l.creamForm),['drip','wave','normal']);assert.deepEqual(C.section(g.draft).rows.map(r=>r.scale),[1,1,.75,.75,.5,.5]);const restored=new C.Game(JSON.parse(JSON.stringify(g.state)));assert.deepEqual(restored.state,g.state);assert.ok(C.validate(g.state));g.discard();assert.equal(g.stock('vanilla'),0);assert.equal(g.stock('whipped'),0);g.undo();assert.equal(g.draft.layers.length,6);});
 test('上大下小及未知尺寸原子拒绝，十二片上限可支持三层各四片',()=>{const g=new C.Game();g.state.inventory.vanilla=20;g.addLayer('vanilla','ivory',{size:6});const before=JSON.stringify(g.state);for(const size of [8,5])assert.throws(()=>g.addLayer('vanilla','ivory',{size}));assert.equal(JSON.stringify(g.state),before);g.discard();for(const size of [8,6,4])for(let i=0;i<4;i++)g.addLayer('vanilla','ivory',{size});assert.equal(g.draft.layers.length,12);assert.throws(()=>g.addLayer('vanilla','ivory',{size:4}));});
 test('装饰与奶油只能落到所选台阶外露部分，侧面归属正确',()=>{const g=three();assert.throws(()=>g.addDecoration('flower',0,0,{level:2}));const d=g.addDecoration('flower',.9,0,{level:2});assert.equal(d.level,2);g.addStroke({level:4,surface:'top',style:'round',color:'#aa7788',size:10,points:[{u:.8,v:0},{u:.85,v:.1}]});assert.equal(g.draft.strokes[0].level,4);assert.throws(()=>g.addStroke({level:4,surface:'top',style:'round',color:'#aa7788',size:10,points:[{u:0,v:0}]}));});
