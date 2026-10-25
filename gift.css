@@ -10,3 +10,19 @@
 @media(prefers-reduced-motion:reduce){.gift-flame,.gift-letter{animation:none!important}}
 
 #community-dialog:has(.gift-editor){width:min(960px,calc(100vw - 24px));max-width:960px}
+
+/* Birthday ritual: reuse the studio's small paper-confetti visual language. */
+.gift-ritual{position:relative;z-index:2;margin:0 auto 24px;padding:16px 12px 20px;max-width:480px;border-bottom:1px dashed #80503935}
+.gift-ritual-note{font-size:15px;line-height:1.8;margin:0 0 12px;overflow-wrap:anywhere}
+.gift-view .gift-wish{min-height:48px;padding:12px 23px;border:1px solid #bc926b;border-radius:18px;background:#f4d9a2;color:#704727;box-shadow:0 3px 0 #ba88513d;font:inherit;cursor:pointer;max-width:100%;line-height:1.5}
+.gift-view .gift-wish:active{transform:translateY(2px);box-shadow:none}.gift-view .gift-wish:focus-visible{outline:3px solid #447f84;outline-offset:4px}
+.gift-smoke{position:absolute;left:50%;top:16%;width:1px;height:1px;pointer-events:none}
+.gift-smoke i{position:absolute;bottom:0;left:-4px;width:9px;height:17px;border:2px solid #9e9287;border-left-color:transparent;border-bottom-color:transparent;border-radius:50%;opacity:0;filter:blur(1.1px);transform-origin:bottom center;animation:gift-smoke-rise 2.5s var(--puff-delay) ease-out both}
+.gift-confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3}
+.gift-confetti i{position:absolute;top:-18px;width:7px;height:12px;border-radius:1px;opacity:0;animation:gift-confetti-fall 3.3s var(--fall-delay) cubic-bezier(.22,.6,.4,1) both}
+.gift-confetti i.rounded{border-radius:50%;height:7px}
+.is-blown .gift-flame{opacity:0;animation:none;transition:opacity .16s ease-out}
+@keyframes gift-smoke-rise{0%{opacity:0;transform:translate(0,0) scale(.45)}15%{opacity:.6}60%{opacity:.26}100%{opacity:0;transform:translate(var(--puff-drift),-72px) rotate(-22deg) scale(2.1)}}
+@keyframes gift-confetti-fall{0%{opacity:0;transform:translate(0,-10px) rotate(0)}8%{opacity:.9}78%{opacity:.8}100%{opacity:0;transform:translate(var(--fall-drift),620px) rotate(var(--fall-turn))}}
+@media(max-width:700px){@keyframes gift-confetti-fall{0%{opacity:0;transform:translate(0,-10px) rotate(0)}8%{opacity:.9}78%{opacity:.8}100%{opacity:0;transform:translate(var(--fall-drift),410px) rotate(var(--fall-turn))}}}
+@media(prefers-reduced-motion:reduce){.gift-smoke,.gift-confetti{display:none}.is-blown .gift-flame{transition:none}}
