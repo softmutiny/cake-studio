@@ -26,14 +26,14 @@
    let mass=q,span=Math.max(length,.1);
    if(!mound){mass=0;span=0;for(let j=Math.max(0,i-2);j<=Math.min(s.points.length-1,i+2);j++){if(s.points.slice(Math.min(i,j)+1,Math.max(i,j)+1).some(p=>p.break)||s.points[j].q>s.size**3*.45)continue;mass+=s.points[j].q;span+=lengths[j];}}
    const r=mound?Math.cbrt(q/2.1+base**3):Math.max(s.size*.12,Math.min(s.size*.65,Math.sqrt(mass/(Math.PI*Math.max(span,.1)*.7))));
-   const h=mound?q/(Math.PI*r*r*.7):r*1.45;
+   const flat=s.polishAt?.(p)||0,h=(mound?q/(Math.PI*r*r*.7):r*1.45)*(1-flat);
    let support=0;const cells=[];
    for(let cx=Math.floor((x-r)/cell);cx<=Math.ceil((x+r)/cell);cx++)for(let cy=Math.floor((y-r)/cell);cy<=Math.ceil((y+r)/cell);cy++){
     const distance=Math.hypot(cx*cell-x,cy*cell-y);if(distance>r+cell*.5)continue;const key='flow:'+cx+','+cy,old=field.get(key);cells.push([key,distance]);
     if(old&&distance<r*.55+cell*.5)support=Math.max(support,old.owner===s&&travel-old.travel<s.size*2.5?old.base:old.h);
    }
    // Compress supported cream gently instead of growing a rigid vertical column.
-   support*=.94;const body={x,y,u:p.u,v:p.v,r,h,z:support,break:p.break,mound};out.push(body);
+   support*=.94*(1-flat);const body={x,y,u:p.u,v:p.v,r,h,z:support,break:p.break,mound,...(flat?{flat}:{})};out.push(body);
    for(const [key,distance]of cells){const crown=Math.sqrt(Math.max(0,1-(distance/(r+cell*.5))**2));const old=field.get(key);const height=support+h*crown;if(!old||height>=old.h){if(stream)changes.push([key,old]);field.set(key,{h:height,base:support,owner:s,travel});}}
    if(stream){stream.journal.push(changes);stream.travel.push(travel);}
    previous={x,y};

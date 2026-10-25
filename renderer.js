@@ -16,7 +16,7 @@ function geometry(d,level=d.layers.length,view='perspective'){
  return{x:380,y:view==='top'?320:450-height-nakedOffset,rx:180*scale,ry:(view==='top'?180:68)*scale,height,bottom:450-bottom,tierHeight:height-bottom,shape:d.shape||'round',view,level};
 }
 const flowGeometryCache=new WeakMap();
-function flowGeometry(d){const stamp=(d.strokes||[]).map(s=>s.id+':'+s.points.length+':'+(s.revision||0)).join('|'),old=flowGeometryCache.get(d);if(old?.stamp===stamp)return old.rows;const fields=new Map(),rows=[];for(const s of d.strokes||[]){if(s.flowVersion!==1)continue;const k=s.level+':'+s.surface;if(!fields.has(k))fields.set(k,new Map());rows.push({s,mesh:CakePiping.mesh(s,fields.get(k))});}flowGeometryCache.set(d,{stamp,rows});return rows;}
+function flowGeometry(d){const stamp=(d.strokes||[]).map(s=>s.id+':'+s.points.length+':'+(s.revision||0)).join('|')+polishStamp(d),old=flowGeometryCache.get(d);if(old?.stamp===stamp)return old.rows;const fields=new Map(),rows=[];for(const s of d.strokes||[]){if(s.flowVersion!==1)continue;const k=s.level+':'+s.surface;if(!fields.has(k))fields.set(k,new Map());rows.push({s,mesh:CakePiping.mesh({...s,polishAt:CakeCore.polishReader(d,s)},fields.get(k))});}flowGeometryCache.set(d,{stamp,rows});return rows;}
 function sceneBounds(d,view){
  const top=view==='top',pg=geometry(d,0,view),bounds={left:108,right:652,top:top?48:355,bottom:top?592:615};
  for(let level=1;level<=d.layers.length;level++){const g=geometry(d,level,view);bounds.top=Math.min(bounds.top,g.y-g.ry-25);}
@@ -83,10 +83,10 @@ const nozzleArt={star:'extras/cream-star',rose:'extras/cream-rose',ribbon:'extra
 const flowTips=new WeakMap();
 function flowProjection(p,g,s){const scale=g.rx/180,pos=project(p,g,s.surface),lift=g.view==='top'?0:(s.surface==='side'?.28:1)*scale;return {...p,x:pos.x,y:pos.y-(p.z+p.h*.5)*lift,r:p.r*scale,h:p.h*scale,lift,ground:pos.y};}
 function drawFlow(ctx,s,g,field,model=null,start=0,end=Infinity){
- model=model||CakePiping.mesh(s,field);const pts=model.slice(Math.max(0,start-2),Math.min(model.length,end+2)).map(p=>flowProjection(p,g,s)),offset=Math.max(0,start-2),color=colorValue(s.color),top=g.view==='top';ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+ model=model||CakePiping.mesh(s,field);const pts=model.slice(Math.max(0,start-2),Math.min(model.length,end+2)).map(p=>flowProjection(p,g,s)),offset=Math.max(0,start-2),color=colorValue(s.color),top=g.view==='top',opacity=ctx.globalAlpha;ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
  for(let i=0;i<pts.length;i++){const p=pts[i],a=i&&!p.break?pts[i-1]:p,b=pts[i+1]&&!pts[i+1].break?pts[i+1]:p,dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;p.nx=-dy/len;p.ny=dx/len;}
  let previous=start?pts[start-offset-1]:null;
- for(let index=start;index<Math.min(end,model.length);index++){const p=pts[index-offset];
+ for(let index=start;index<Math.min(end,model.length);index++){const p=pts[index-offset];ctx.globalAlpha=opacity*(1-(p.flat||0));
   const r=Math.max(.4,p.r),ry=top?r:Math.max(r*.42,p.h*.52);
   if(previous&&!p.break){
    const a=previous,dx=p.x-a.x,dy=p.y-a.y,len=Math.hypot(dx,dy)||1,nx=-dy/len,ny=dx/len;
@@ -104,8 +104,8 @@ function drawFlow(ctx,s,g,field,model=null,start=0,end=Infinity){
   }
   previous=p;
  }
- const p=end>=model.length?pts.at(-1):null;if(p){const peak=Math.min(s.size*.72,p.r*.85+3),x=p.x+p.r*.17,y=p.y-(top?p.r*.22:p.h*.44+peak);
-  if(s.tip){const grad=ctx.createLinearGradient(p.x-p.r*.6,p.y,p.x+p.r*.7,p.y);grad.addColorStop(0,tintColor(color,.13));grad.addColorStop(.4,tintColor(color,.3));grad.addColorStop(1,tintColor(color,-.12));ctx.fillStyle=grad;ctx.beginPath();ctx.moveTo(p.x-p.r*.66,p.y-(top?0:p.h*.14));ctx.bezierCurveTo(p.x-p.r*.43,p.y-p.h*.6,x-peak*.3,y+peak*.6,x,y);ctx.bezierCurveTo(x-peak*.12,y+peak*.73,p.x+p.r*.63,p.y-p.h*.2,p.x+p.r*.65,p.y);ctx.quadraticCurveTo(p.x,p.y+p.r*.15,p.x-p.r*.66,p.y-(top?0:p.h*.14));ctx.fill();}
+ const p=end>=model.length?pts.at(-1):null;if(p){const peak=Math.min(s.size*.72,p.r*.85+3)*(1-(p.flat||0)),x=p.x+p.r*.17,y=p.y-(top?p.r*.22:p.h*.44+peak);
+  if(s.tip){ctx.globalAlpha=opacity*(1-(p.flat||0));const grad=ctx.createLinearGradient(p.x-p.r*.6,p.y,p.x+p.r*.7,p.y);grad.addColorStop(0,tintColor(color,.13));grad.addColorStop(.4,tintColor(color,.3));grad.addColorStop(1,tintColor(color,-.12));ctx.fillStyle=grad;ctx.beginPath();ctx.moveTo(p.x-p.r*.66,p.y-(top?0:p.h*.14));ctx.bezierCurveTo(p.x-p.r*.43,p.y-p.h*.6,x-peak*.3,y+peak*.6,x,y);ctx.bezierCurveTo(x-peak*.12,y+peak*.73,p.x+p.r*.63,p.y-p.h*.2,p.x+p.r*.65,p.y);ctx.quadraticCurveTo(p.x,p.y+p.r*.15,p.x-p.r*.66,p.y-(top?0:p.h*.14));ctx.fill();}
   flowTips.set(s,{x:p.x,y:top?p.y:p.y-p.h*.5});
  }ctx.restore();return pts;
 }
@@ -121,8 +121,11 @@ function drawStroke(ctx,s,g,selected=false,field=new Map(),stream=null){
 }
 const creamLayers=new Map(),liveCream=new WeakMap(),hitMeshes=new Map();
 function creamLayer(ctx,strokes,g,options,preview){
- if(!strokes.length&&!preview)return;const key=g.shape+':'+g.rx+':'+g.ry+':'+g.y+':'+g.height+':'+strokes.map(s=>s.id+':'+s.points.length+':'+(s.revision||0)).join('|');let layer=creamLayers.get(key);
- if(!layer){const canvas=document.createElement('canvas'),offsetY=Math.max(0,Math.ceil(-g.y+g.ry+320));canvas.width=760;canvas.height=640+offsetY;canvas.getContext('2d').translate(0,offsetY);const field=new Map(),meshes=[];for(const s of strokes)meshes.push({s,pts:drawStroke(canvas.getContext('2d'),s,g,false,field)});layer={canvas,field,meshes,offsetY};if(creamLayers.size>16)creamLayers.delete(creamLayers.keys().next().value);creamLayers.set(key,layer);}
+ if(!strokes.length&&!preview)return;const key=g.shape+':'+g.rx+':'+g.ry+':'+g.y+':'+g.height+':'+strokes.map(s=>s.id+':'+s.points.length+':'+(s.revision||0)).join('|')+':'+polishStamp(options.polishDraft);let layer=creamLayers.get(key);
+ if(!layer){const canvas=document.createElement('canvas'),offsetY=Math.max(0,Math.ceil(-g.y+g.ry+320));canvas.width=760;canvas.height=640+offsetY;canvas.getContext('2d').translate(0,offsetY);const field=new Map(),meshes=[];for(const s of strokes){const shaped=options.polishDraft?{...s,polishAt:CakeCore.polishReader(options.polishDraft,s)}:s;
+ if(s.flowVersion===1||!options.polishDraft||!hasPolish(options.polishDraft,s)){meshes.push({s,pts:drawStroke(canvas.getContext('2d'),shaped,g,false,field)});}
+ else{const temp=document.createElement('canvas');temp.width=760;temp.height=canvas.height;const tc=temp.getContext('2d');tc.translate(0,offsetY);const pts=drawStroke(tc,s,g,false,field);erasePolish(tc,options.polishDraft,s,g);canvas.getContext('2d').drawImage(temp,0,-offsetY);meshes.push({s,pts});}
+ }layer={canvas,field,meshes,offsetY};if(creamLayers.size>16)creamLayers.delete(creamLayers.keys().next().value);creamLayers.set(key,layer);}
  ctx.save();if(options.smooth)ctx.globalAlpha*=1-options.smooth.progress;ctx.drawImage(layer.canvas,0,-layer.offsetY);if(options.tool==='move'){const selected=layer.meshes.find(m=>m.s.id===options.selected);if(selected?.pts.length){ctx.lineWidth=1.5;ctx.strokeStyle='#2489a7';for(const p of [selected.pts[0],selected.pts.at(-1)]){ctx.beginPath();ctx.arc(p.x,p.y,selected.s.size*.5+4,0,Math.PI*2);ctx.stroke();}}}if(preview){let live=liveCream.get(preview);if(!live||live.source!==preview.points||live.key!==key){const canvas=document.createElement('canvas');canvas.width=760;canvas.height=640+layer.offsetY;canvas.getContext('2d').translate(0,layer.offsetY);live={canvas,field:new Map(layer.field),stream:{},source:preview.points,key};liveCream.set(preview,live);}if(live.stream.count!==preview.points.length||live.revision!==preview.revision){live.revision=preview.revision;if(preview.style==='round'){if(preview.flowVersion===1){
  const lc=live.canvas.getContext('2d');if(!live.prefix){live.prefix=document.createElement('canvas');live.prefix.width=760;live.prefix.height=live.canvas.height;live.prefix.getContext('2d').translate(0,layer.offsetY);live.flow={};live.frozen=0;}
  const model=CakePiping.mesh(preview,live.field,live.flow),freeze=Math.max(0,model.length-5);
@@ -151,8 +154,39 @@ function drawCoat(ctx,d,g){shapeBody(ctx,g,g.tierHeight||g.height,colorValue(d.c
 function creamCap(ctx,l,g){const color=colorValue(l.color),h=layerHeight(l);if(g.view==='top'){contourPath(ctx,g);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle=tintColor(color,-.28);ctx.lineWidth=2;ctx.stroke();return;}
  shapeBody(ctx,g,h,color,false);if(l.creamForm==='normal'||!l.creamForm)return;ctx.save();ctx.fillStyle=color;ctx.strokeStyle=tintColor(color,-.3);ctx.lineWidth=2;ctx.beginPath();const n=100;for(let i=0;i<=n;i++){const u=-.99+i*1.98/n,y=g.y+(CakeCore.frontEdge(g.shape,u)||0)*g.ry;if(!i)ctx.moveTo(g.x+u*g.rx,y);else ctx.lineTo(g.x+u*g.rx,y);}for(let i=n;i>=0;i--){const u=-.99+i*1.98/n,angle=i/n*Math.PI*12,wave=l.creamForm==='drip'?Math.pow(Math.max(0,Math.sin(angle)),4)*(13+7*Math.sin(i*.43)**2):8*(1+Math.sin(angle));ctx.lineTo(g.x+u*g.rx,g.y+(CakeCore.frontEdge(g.shape,u)||0)*g.ry+h+wave);}ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();}
 
+
+const polishTextures=new WeakMap(),polishIdentities=new WeakMap();let polishSerial=0;function polishIdentity(b){if(!polishIdentities.has(b))polishIdentities.set(b,++polishSerial);return polishIdentities.get(b);}
+function polishStamp(d){return d?d.layers.map(l=>(l.polish||[]).map(b=>polishIdentity(b)+':'+b.revision).join('/')).join(';'):'';}
+function hasPolish(d,s){return d.layers.some(l=>l.polish?.some(b=>b.surface===s.surface&&b.targets.includes(s.id)));}
+function polishTexture(b,mask=false){let cached=polishTextures.get(b);if(!cached||cached.revision!==b.revision){cached={revision:b.revision};polishTextures.set(b,cached);}const key=mask?'mask':'color';if(cached[key])return cached[key];
+ const c=document.createElement('canvas');c.width=c.height=65;const ctx=c.getContext('2d'),pixels=ctx.createImageData(65,65),color=colorValue(b.color),rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16));
+ for(const [key,value]of Object.entries(b.cells)){const offset=+key*4;const t=(+key%65+Math.floor(+key/65))/128,shade=b.surface==='side'?.1-.32*(+key%65)/64:.28-.34*t;for(let k=0;k<3;k++)pixels.data[offset+k]=mask?255:shade>=0?rgb[k]+(255-rgb[k])*shade:rgb[k]*(1+shade);pixels.data[offset+3]=value;}ctx.putImageData(pixels,0,0);cached[key]=c;return c;
+}
+function polishProjection(ctx,b,g,depth,mask=false){
+ const texture=polishTexture(b,mask);ctx.save();contourPath(ctx,g,b.surface,depth);ctx.clip();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+ if(b.surface==='top')ctx.drawImage(texture,g.x-g.rx,g.y-g.ry,g.rx*2,g.ry*2);
+ else{const steps=Math.ceil(g.rx*2);for(let x=0;x<steps;x++){const u=-1+(x+.5)/steps*2,front=CakeCore.frontEdge(g.shape,u);if(front===null)continue;ctx.drawImage(texture,x/steps*65,0,65/steps,65,g.x-g.rx+x/steps*g.rx*2,g.y+front*g.ry,g.rx*2/steps+.02,depth);}}
+ ctx.restore();
+}
+function drawPolish(ctx,d,level,g,surface){
+ const batches=d.layers[level-1]?.polish?.filter(b=>b.surface===surface);if(!batches?.length)return;
+ // Side fields are bounded to this physical slice, even when several slices form a tier.
+ for(const b of batches)polishProjection(ctx,b,g,layerHeight(d.layers[level-1]));
+}
+function erasePolish(ctx,d,s,g){
+ ctx.save();ctx.globalCompositeOperation='destination-out';
+ for(let i=0;i<d.layers.length;i++){if(s.surface==='top'&&s.level!==i+1)continue;const pg=geometry(d,i+1,g.view);for(const b of d.layers[i].polish||[])if(b.surface===s.surface&&b.targets.includes(s.id))polishProjection(ctx,b,pg,layerHeight(d.layers[i]),true);}
+ ctx.restore();
+}
+
 function fadeStroke(ctx,s,g,options){ctx.save();if(options.smooth)ctx.globalAlpha*=1-options.smooth.progress;drawStroke(ctx,s,g,options.tool==='move'&&s.id===options.selected);ctx.restore();}
-function topArtwork(ctx,d,level,g,options){const finish=d.layers[level-1]?.finish,creamOptions=finish?{...options,smooth:options.smooth||finish}:options;window.CakePourArt?.top(ctx,d,level,g,options);const preview=options.previewStroke?.surface==='top'&&options.previewStroke.level===level?options.previewStroke:null;creamLayer(ctx,(d.strokes||[]).filter(s=>s.surface==='top'&&s.level===level),g,creamOptions,preview);for(const o of [...d.decos].filter(o=>(o.surface||'top')==='top'&&(o.level??d.layers.length)===level&&!(level<d.layers.length&&o.v>0&&CakeCore.exposed(d,level,o.u,o.v,'top'))).sort(decoOrder))drawDecoration(ctx,o,g,o.id===options.selected);}
+function pourPolishPhase(ctx,d,level,g,options,surface,after=false){
+ const tier=CakeCore.tiers(d).find(t=>level>t.start&&level<=t.end),layers=surface==='top'?[d.layers[level-1]]:d.layers.slice(tier?.start||0,tier?.end||level),batches=layers.flatMap(l=>(l.polish||[]).filter(b=>b.surface===surface));
+ if(!batches.length){if(!after)window.CakePourArt?.[surface](ctx,d,level,g,options);return;}
+ const records=options.pour||d.glazes||[],old=new Set(batches.flatMap(b=>b.films||[]));
+ window.CakePourArt?.[surface](ctx,d,level,g,{...options,pour:records.filter(p=>after?!old.has(p.id):old.has(p.id))});
+}
+function topArtwork(ctx,d,level,g,options){const finish=d.layers[level-1]?.finish,creamOptions={...options,polishDraft:d,...(finish?{smooth:options.smooth||finish}:{})};pourPolishPhase(ctx,d,level,g,options,'top');drawPolish(ctx,d,level,g,'top');pourPolishPhase(ctx,d,level,g,options,'top',true);const preview=options.previewStroke?.surface==='top'&&options.previewStroke.level===level?options.previewStroke:null;creamLayer(ctx,(d.strokes||[]).filter(s=>s.surface==='top'&&s.level===level),g,creamOptions,preview);for(const o of [...d.decos].filter(o=>(o.surface||'top')==='top'&&(o.level??d.layers.length)===level&&!(level<d.layers.length&&o.v>0&&CakeCore.exposed(d,level,o.u,o.v,'top'))).sort(decoOrder))drawDecoration(ctx,o,g,o.id===options.selected);}
 function nakedCake(ctx,d,options){let y=450;const view=options.view||'perspective',tiers=CakeCore.tiers(d);for(let i=0;i<d.layers.length;i++){const l=d.layers[i],it=items[l.item],h=layerHeight(l),scale=CakeCore.layerSize(d,i+1)/8,g={...geometry(d,i+1,view),y:view==='top'?320:y-h-(l.kind==='base'?12:0),height:h,tierHeight:h};
  if(d.coat||l.coating){}else if(view==='top'){if(l.kind==='filling')drawFilling(ctx,l,320,{...g,y:320});else{contourPath(ctx,g);ctx.fillStyle=l.kind==='cream'?colorValue(l.color):it.top||it.color;ctx.fill();ctx.strokeStyle=tintColor(ctx.fillStyle,-.3);ctx.lineWidth=2;ctx.stroke();if(l.kind==='base'){ctx.save();contourPath(ctx,g);ctx.clip();crumbMarks(ctx,g,it.color,it.texture,110);ctx.restore();}}}
  else if(l.kind==='base'){if(scale!==1){shapeBody(ctx,g,h,it.color,true,it.texture);}else{ctx.save();ctx.translate(380*(1-scale),0);ctx.scale(scale,1);const full={...g,x:380,rx:180,ry:68};if(g.shape==='round'&&['vanilla','chocolate','tea','pinkbase'].includes(l.item))image(ctx,it.asset||l.item,200,y-h-68,360,h+136);else baseLayer(ctx,l.item,full);ctx.restore();}}
@@ -160,7 +194,9 @@ function nakedCake(ctx,d,options){let y=450;const view=options.view||'perspectiv
  y-=h;const endTier=tiers.find(t=>t.end===i+1);const coating=d.coat||l.coating;if(coating&&(endTier||d.layers[i+1]?.coating!==coating)){const coatG=geometry(d,i+1,view);let start=i;while(start>0&&CakeCore.layerSize(d,start)===CakeCore.layerSize(d,i+1)&&(d.coat||d.layers[start-1].coating)===coating)start--;coatG.tierHeight=d.layers.slice(start,i+1).reduce((n,l)=>n+layerHeight(l),0);if(view==='top'){contourPath(ctx,coatG);ctx.fillStyle=colorValue(coating);ctx.fill();ctx.strokeStyle=tintColor(coating,-.3);ctx.stroke();}else drawCoat(ctx,{coat:coating},coatG);}
   if(l.finish){ctx.save();ctx.globalAlpha=l.finish.progress;const fg={...geometry(d,i+1,view),tierHeight:h};if(view==='top'){contourPath(ctx,fg);ctx.fillStyle=colorValue(l.finish.color);ctx.fill();}else drawCoat(ctx,{coat:l.finish.color},fg);ctx.restore();}
  const artG=geometry(d,i+1,view);topArtwork(ctx,d,i+1,artG,options);
- if(endTier&&view!=='top'){for(let sideLevel=endTier.start+1;sideLevel<=endTier.end;sideLevel++){const sg=geometry(d,sideLevel,view),sideG={...sg,height:sg.tierHeight};window.CakePourArt?.side(ctx,d,sideLevel,sideG,options);creamLayer(ctx,(d.strokes||[]).filter(s=>s.surface==='side'&&s.level===sideLevel),sideG,d.layers[sideLevel-1]?.finish?{...options,smooth:options.smooth||d.layers[sideLevel-1].finish}:options,options.previewStroke?.surface==='side'&&options.previewStroke.level===sideLevel?options.previewStroke:null);for(const o of [...d.decos].filter(o=>o.surface==='side'&&o.level===sideLevel).sort(decoOrder))drawDecoration(ctx,o,sideG,o.id===options.selected);}}
+ if(endTier&&view!=='top'){
+ for(const phase of ['before','flat','after'])for(let n=endTier.start+1;n<=endTier.end;n++){const sg=geometry(d,n,view),sideG={...sg,height:sg.tierHeight};if(phase==='flat')drawPolish(ctx,d,n,sideG,'side');else pourPolishPhase(ctx,d,n,sideG,options,'side',phase==='after');}
+ for(let sideLevel=endTier.start+1;sideLevel<=endTier.end;sideLevel++){const sg=geometry(d,sideLevel,view),sideG={...sg,height:sg.tierHeight};creamLayer(ctx,(d.strokes||[]).filter(s=>s.surface==='side'&&s.level===sideLevel),sideG,{...options,polishDraft:d,...(d.layers[sideLevel-1]?.finish?{smooth:options.smooth||d.layers[sideLevel-1].finish}:{})},options.previewStroke?.surface==='side'&&options.previewStroke.level===sideLevel?options.previewStroke:null);for(const o of [...d.decos].filter(o=>o.surface==='side'&&o.level===sideLevel).sort(decoOrder))drawDecoration(ctx,o,sideG,o.id===options.selected);}}
 
   }}
 
