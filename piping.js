@@ -10,9 +10,15 @@
   s.revision=(s.revision||0)+1;
  }
  function valid(s){return s.flowVersion===undefined||s.flowVersion===1&&s.style==='round'&&(s.tip===undefined||typeof s.tip==='boolean')&&s.points.every(p=>Number.isFinite(p.q)&&p.q>=0&&p.q<=1e9);}
- function mesh(s,field=new Map()){
-  const out=[],cell=5,lengths=s.points.map((p,i)=>{const a=i&&!p.break?s.points[i-1]:p,b=s.points[i+1]&&!s.points[i+1].break?s.points[i+1]:p;return (Math.hypot((p.u-a.u)*180,(p.v-a.v)*180)+Math.hypot((b.u-p.u)*180,(b.v-p.v)*180))*.5;});let travel=0,previous=null;
-  for(let i=0;i<s.points.length;i++){
+ function mesh(s,field=new Map(),stream=null){
+  // Rewind the mutable tail: density uses two neighbours, whose lengths
+  // depend on one further point. Earlier deposits are immutable while drawing.
+  const start=stream?Math.max(0,(stream.count||0)-4):0,out=stream?.out||[],cell=5;
+  if(stream){for(let i=(stream.journal?.length||0)-1;i>=start;i--)for(const [key,old]of stream.journal[i]){if(old===undefined)field.delete(key);else field.set(key,old);}stream.journal=(stream.journal||[]).slice(0,start);stream.travel=(stream.travel||[]).slice(0,start);out.length=start;}
+  const lengths=[];for(let i=Math.max(0,start-2);i<s.points.length;i++){const p=s.points[i],a=i&&!p.break?s.points[i-1]:p,b=s.points[i+1]&&!s.points[i+1].break?s.points[i+1]:p;lengths[i]=(Math.hypot((p.u-a.u)*180,(p.v-a.v)*180)+Math.hypot((b.u-p.u)*180,(b.v-p.v)*180))*.5;}
+  let travel=start?stream.travel[start-1]:0,previous=start?out[start-1]:null;
+  for(let i=start;i<s.points.length;i++){
+   const changes=[];
    const p=s.points[i],x=p.u*180,y=p.v*180,next=s.points[i+1];let length=previous&&!p.break?Math.hypot(x-previous.x,y-previous.y):0;
    travel+=length;if(next&&!next.break)length=(length+Math.hypot((next.u-p.u)*180,(next.v-p.v)*180))*.5;
    const q=p.q||.001,base=s.size*.32;
@@ -28,9 +34,11 @@
    }
    // Compress supported cream gently instead of growing a rigid vertical column.
    support*=.94;const body={x,y,u:p.u,v:p.v,r,h,z:support,break:p.break,mound};out.push(body);
-   for(const [key,distance]of cells){const crown=Math.sqrt(Math.max(0,1-(distance/(r+cell*.5))**2));const old=field.get(key);const height=support+h*crown;if(!old||height>=old.h)field.set(key,{h:height,base:support,owner:s,travel});}
+   for(const [key,distance]of cells){const crown=Math.sqrt(Math.max(0,1-(distance/(r+cell*.5))**2));const old=field.get(key);const height=support+h*crown;if(!old||height>=old.h){if(stream)changes.push([key,old]);field.set(key,{h:height,base:support,owner:s,travel});}}
+   if(stream){stream.journal.push(changes);stream.travel.push(travel);}
    previous={x,y};
   }
+  if(stream){stream.count=s.points.length;stream.out=out;}
   return out;
  }
  return {rate,feed,valid,mesh};

@@ -1,0 +1,53 @@
+/* The canvas is the main workspace; occasional controls live in drawers. */
+#tray-scrim{display:none}.desktop-adjust,.desktop-structure{display:none}
+.cream-mode-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-bottom:12px}
+.cream-mode-tabs button{padding:8px 2px;font-size:14px;box-shadow:none;border:1px solid #d6b587}
+.cream-mode-tabs button[aria-pressed=true]{background:#bde0cf;border-color:#699d85}
+.tool-ready{padding:10px 12px;background:#ecf3e2;border-radius:12px;border:1px solid #c5d7b9}
+.tool-ready b{font-size:18px}.tool-ready p,.tool-detail{font:12px/1.8 'Microsoft YaHei',sans-serif;color:#826447}
+.tool-detail{padding:14px 3px}.nozzle-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.nozzle-grid button{min-height:74px;font-size:12px}.nozzle-grid .nozzle-preview{width:46px;height:32px}
+.nozzle-grid .nozzle-sample{width:40px;margin:10px 0}.ingredients .subhead{margin:10px 0 7px}
+.pour-panel{margin:6px 0;padding:8px 0;background:transparent;border:0}
+.pour-panel label{display:flex;align-items:center;gap:8px;margin:12px 0;font-size:15px}
+.pour-panel select{flex:1;min-height:42px;font:14px 'Microsoft YaHei',sans-serif;min-width:0}
+.pour-panel p{font:12px/1.8 'Microsoft YaHei',sans-serif;margin-top:12px}
+.cream-forms{margin:16px 0}.toolbox button.active{background:#bde0cf;border-color:#699d85}
+@media(min-width:901px){
+ html{overflow-y:auto}.app{height:100dvh;min-height:680px;display:flex;flex-direction:column;padding:14px 20px 0}
+ header{flex-shrink:0;margin-bottom:14px}.main-nav{margin:0}.app>footer{flex-shrink:0;padding:8px 0}
+ #workshop.active{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 324px;gap:18px;min-height:0;flex:1}
+ .worktable{height:100%;min-height:0;align-self:stretch;display:flex;flex-direction:column;gap:0}
+ .view-controls{flex:0 0 auto;width:100%;height:auto;margin:0;min-height:51px;padding:7px;gap:5px;justify-content:flex-start}
+ .view-controls button{font-size:13px;padding:6px 9px;min-height:36px}.view-controls label{font-size:12px}
+ .view-controls input{max-width:92px}.view-controls select{max-width:125px}.view-controls label[for=view-zoom]{flex:1}
+ .stage-heading{min-height:35px;flex:0 0 35px;margin:0}.ribbon{font-size:14px;padding:5px 14px}.small-tag{display:none}
+ .canvas-wrap{min-height:220px;flex:1;height:auto}.worktable #cake-canvas{position:absolute;inset:0;width:100%;height:100%;max-height:none}
+ .toolbox{flex:0 0 76px;max-width:830px;min-height:76px}.toolbox button{max-width:82px;font-size:13px;min-height:62px}
+ .interaction-tip{flex:0 0 35px;height:35px;min-height:35px;padding:8px 0 0}
+ .ingredients{height:100%;max-height:none;min-height:0;padding:16px}.ingredients .panel-head{margin-bottom:4px}
+ .ingredients h2{font-size:23px}.material-tabs{padding:6px 0 10px}.material-tabs button{font-size:14px}
+ #material-content{padding-top:12px;overscroll-behavior:contain}.cart-note{padding-top:10px;font-size:11px}
+ .nozzle-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.nozzle-grid button{padding:6px 2px;font-size:10px;min-height:78px}.nozzle-grid .nozzle-preview{width:38px;height:32px}.nozzle-grid .nozzle-sample{width:30px}
+ .structure,#selection-controls{display:none}.desktop-structure{display:inline-block;background:#f4e7cd}
+ .desktop-adjust{display:block;position:absolute;right:10px;bottom:121px;min-height:40px;padding:7px 11px;font-size:13px;visibility:hidden}
+ .worktable:has(.has-selection)>.desktop-adjust{visibility:visible;background:#d5e9de}
+ body[data-tray=layers] #tray-scrim,body[data-tray=adjust] #tray-scrim{display:block;position:fixed;inset:0;width:100%;height:100%;background:#49311b18;border:0;border-radius:0;box-shadow:none;z-index:39;cursor:default}
+ body[data-tray=layers] .structure,body[data-tray=adjust] #selection-controls{display:flex;flex-direction:column;position:fixed;z-index:40;background:#fff8eafa;border:2px solid #b88755;box-shadow:0 12px 45px #70422235;padding:18px;border-radius:22px;overflow:auto}
+ body[data-tray=layers] .structure{top:110px;left:28px;bottom:35px;width:300px;max-height:none}
+ body[data-tray=adjust] #selection-controls{width:340px;height:auto;max-height:70dvh;right:368px;bottom:150px;margin:0}
+ .structure .tray-close,#selection-controls .tray-close{display:block;align-self:flex-end;min-height:36px;padding:6px 13px;font-size:13px;margin:0 0 12px}
+ #selection-controls label{min-height:40px}#selection-controls .order-controls{flex-wrap:wrap}#selection-controls .order-controls button{min-height:36px}
+ .worktable.expanded{position:fixed;inset:12px;width:auto;height:auto;z-index:30;padding:16px;background:#fff4def2;border-radius:24px}
+ .worktable.expanded .canvas-wrap{flex:1;min-height:200px;height:auto}.worktable.expanded .stage-heading{min-height:35px}
+}
+@media(max-width:900px){
+ .cream-mode-tabs{margin-bottom:8px}.tool-ready{padding:7px 10px}.tool-ready b{font-size:16px}.tool-ready p{font-size:11px}
+ .nozzle-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.nozzle-grid button{min-height:68px;font-size:10px;padding:5px 2px;gap:2px}
+ .nozzle-grid .nozzle-preview{width:36px;height:28px}.nozzle-grid .nozzle-sample{width:28px}
+ .color-label{margin-top:10px;font-size:15px}.color-presets{grid-template-columns:repeat(8,minmax(0,1fr));gap:5px;padding:9px 1px}.color-presets button{height:36px;min-height:36px;border-radius:10px}
+ .brush-size{margin:5px 0}.surface-modes{margin:5px 0}.surface-modes button{font-size:11px}
+ body[data-tray=materials] .ingredients{height:min(59dvh,510px)}
+ .mobile-dock button:first-child{font-size:13px}.view-controls{height:94px;min-height:94px;flex-basis:94px}
+}
+@media(prefers-reduced-motion:reduce){button{transition:none}}

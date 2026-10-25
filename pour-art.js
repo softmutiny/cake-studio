@@ -59,9 +59,12 @@ function sideImage(a,p,g,scale){
  }}ctx.putImageData(im,0,0);const result={canvas:c,x:g.x-g.rx-pad,y:g.y-g.ry-pad,scale};a.projections.set(key,result);return result;
 }
 function composite(ctx,r,shadow){ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';if(shadow){ctx.shadowColor='#6b432d35';ctx.shadowBlur=3;ctx.shadowOffsetY=1.5;}ctx.drawImage(r.canvas,r.x,r.y,r.canvas.width/r.scale,r.canvas.height/r.scale);ctx.restore();}
-function top(ctx,d,level,g,options){for(const p of records(d,options)){if(p.level!==level||p.total<=0)continue;composite(ctx,topImage(assets(p),p,g,quality(options)),true);}}
-function side(ctx,d,level,g,options){if(g.view==='top')return;for(const p of records(d,options)){if(p.level!==level||p.total<=0)continue;composite(ctx,sideImage(assets(p),p,g,quality(options)),false);}}
+function preview(p,g,options){return options.asyncPour&&options.pour&&window.CakePourPreview?.get(p,g,quality(options));}
+function prior(d,p){return (d.glazes||[]).filter(old=>old.level===p.level&&(old.id===p.id||(p.replaces||[]).includes(old.id)));}
+function top(ctx,d,level,g,options){for(const p of records(d,options)){if(p.level!==level||p.total<=0)continue;const live=preview(p,g,options);if(live){if(live.top)composite(ctx,live.top,true);else for(const old of prior(d,p))composite(ctx,topImage(assets(old),old,g,quality(options)),true);}else composite(ctx,topImage(assets(p),p,g,quality(options)),true);}}
+function side(ctx,d,level,g,options){if(g.view==='top')return;for(const p of records(d,options)){if(p.level!==level||p.total<=0)continue;const live=preview(p,g,options);if(live){if(live.side)composite(ctx,live.side,false);else for(const old of prior(d,p))composite(ctx,sideImage(assets(old),old,g,quality(options)),false);}else composite(ctx,sideImage(assets(p),p,g,quality(options)),false);}}
+function bake(p,g,scale){const a=assets(p);return {top:topImage(a,p,g,scale),side:g.view==='top'?null:sideImage(a,p,g,scale)};}
 
 function jug(ctx,p,color,flowing,flow=1){ctx.save();if(flowing){ctx.strokeStyle=color;ctx.lineCap='round';ctx.lineWidth=3+flow*3;ctx.beginPath();ctx.moveTo(p.x-6,p.y-79);ctx.bezierCurveTo(p.x-1,p.y-60,p.x,p.y-30,p.x,p.y);ctx.stroke();ctx.strokeStyle='#fffdf0b0';ctx.lineWidth=1.4;ctx.stroke();ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(p.x,p.y,7+flow*2,3.2,0,0,Math.PI*2);ctx.fill();}window.CakeArt?.image(ctx,'tools/jug',p.x-161,p.y-173,168,168);ctx.restore();}
-window.CakePourArt={top,side,jug};
+window.CakePourArt={top,side,jug,bake};
 })();

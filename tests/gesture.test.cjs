@@ -1,5 +1,14 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
 const Core=require('../core.js');
+test('工具一次选中即用，淋奶盖设置不混入花嘴，铺层单独选择',()=>{
+ const h=setup();h.click({item:'vanilla'});h.click({tool:'pour'});let html=h.nodes.get('#material-content').innerHTML;assert.match(html,/奶壶已拿好/);assert.match(html,/id="pour-rate"/);assert.doesNotMatch(html,/id="brush-size"|data-nozzle/);
+ h.click({tool:'pipe'});html=h.nodes.get('#material-content').innerHTML;assert.match(html,/id="brush-size"/);assert.doesNotMatch(html,/id="pour-rate"/);
+ h.click({creamMode:'layer'});assert.match(h.nodes.get('#material-content').innerHTML,/id="layer-cream"/);
+});
+test('高频指针事件合并到一帧，不在每个事件里重复计算相机',()=>{
+ const h=setup();h.click({item:'vanilla'});h.click({tool:'pipe'});h.advance(16);let calls=0;const original=h.art.setView;h.art.setView=(...args)=>{calls++;return original(...args);};
+ for(let i=0;i<100;i++)h.callbacks['#cake-canvas:pointermove'](h.point(350+i*.1,390));assert.equal(calls,0);h.advance(16);assert.equal(calls,1);
+});
 test('真实手势计时：原地持续挤、越界暂停、回来续挤，松手收尖且撤回完整',()=>{
  const h=setup();h.click({item:'vanilla'});h.click({tool:'pipe'});const p=h.point(380,390);h.callbacks['#cake-canvas:pointerdown'](p);for(let i=0;i<60;i++)h.advance(1000/60);h.callbacks['#cake-canvas:pointermove'](h.point(900,-100));for(let i=0;i<60;i++)h.advance(1000/60);h.callbacks['#cake-canvas:pointermove'](p);for(let i=0;i<60;i++)h.advance(1000/60);h.callbacks['#cake-canvas:pointerup'](p);const s=h.state().draft.strokes[0],mass=s.points.reduce((n,p)=>n+p.q,0);assert.equal(s.flowVersion,1);assert.equal(s.tip,true);assert.ok(s.points.some(p=>p.break));assert.ok(Math.abs(mass/require('../piping.js').rate(16)-2.035)<.03);assert.ok(Core.validate(h.state()));h.callbacks['document:keydown']({key:'z',ctrlKey:true,target:{tagName:'BODY'},preventDefault(){}});assert.equal(h.state().draft.strokes.length,0);
 });
