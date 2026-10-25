@@ -33,7 +33,7 @@
     if(old&&distance<r*.55+cell*.5)support=Math.max(support,old.owner===s&&travel-old.travel<s.size*2.5?old.base:old.h);
    }
    // Compress supported cream gently instead of growing a rigid vertical column.
-   support*=.94*(1-flat);const body={x,y,u:p.u,v:p.v,r,h,z:support,break:p.break,mound,...(flat?{flat}:{})};out.push(body);
+   support=Math.max(support,s.baseAt?.(p)||0);support*=.94*(1-flat);const body={x,y,u:p.u,v:p.v,r,h,z:support,break:p.break,mound,...(flat?{flat}:{})};out.push(body);
    for(const [key,distance]of cells){const crown=Math.sqrt(Math.max(0,1-(distance/(r+cell*.5))**2));const old=field.get(key);const height=support+h*crown;if(!old||height>=old.h){if(stream)changes.push([key,old]);field.set(key,{h:height,base:support,owner:s,travel});}}
    if(stream){stream.journal.push(changes);stream.travel.push(travel);}
    previous={x,y};

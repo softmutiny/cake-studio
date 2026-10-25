@@ -7,6 +7,7 @@
  async function tx(store,mode,fn){const d=await db();return new Promise((resolve,reject)=>{const t=d.transaction(store,mode),r=fn(t.objectStore(store));t.oncomplete=()=>resolve(r.result);t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error||Error('本地存储失败'));});}
  const read=k=>{const raw=localStorage.getItem(k);return raw?JSON.parse(raw):null;};
  window.CakeStore={test,guestKey,get key(){return key;},read,
+  async archiveLegacyBackups(){let count=0;const suffixes=['plates-mix','film-rework','cascade','pouring','tiers','flavors','v3'];for(const suffix of suffixes){const oldKey=guestKey+'-before-'+suffix,raw=localStorage.getItem(oldKey);if(!raw)continue;let state;try{state=JSON.parse(raw);}catch{continue;}const value={id:'legacy:'+oldKey,scope:guestKey,time:new Date().toISOString(),reason:'旧版本备份：'+suffix,state};await tx('backups','readwrite',s=>s.put(value));const saved=await tx('backups','readonly',s=>s.get(value.id));if(JSON.stringify(saved?.state)!==JSON.stringify(state))throw Error('旧备份转存核对失败');if(localStorage.getItem(oldKey)===raw){localStorage.removeItem(oldKey);count++;}}return count;},
   accountKey(uid){return guestKey+':account:'+uid;},
   switchKey(k){key=k;},
   write(state){localStorage.setItem(key,JSON.stringify(state));},

@@ -1,0 +1,28 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),S=require('../spatula'),C=require('../core');
+const pt=(u,v=0,level=1,surface='top')=>({u,v,level,surface});
+test('实验台刮料模型：刀面削去高处，余料填坑，体积和颜色质量守恒',()=>{
+ const f=S.create(128,128,180,180);S.blob(f,50,90,12,2,[243,186,198]);const sp=S.blade({blade:56,press:.3}),before=S.volume(f),colorMass=S.pigmentMass(f);
+ S.sweep(f,sp,35,90,65,90);const carry=sp.carry.reduce((a,b)=>a+b,0);assert.ok(carry>0);assert.ok(S.sample(f,50,90)<.65);S.sweep(f,sp,65,90,120,90);S.lift(f,sp,120,90);for(let i=0;i<5;i++)S.settle(f);
+ const total=S.volume(f)+sp.carry.reduce((a,b)=>a+b,0);assert.ok(Math.abs(total-before)/before<.00001);assert.ok(S.sample(f,80,90)>.2,'带去原本没有奶油的区域');const mass=S.pigmentMass(f);for(let k=0;k<3;k++){const carried=sp.carry.reduce((n,m,i)=>n+m*sp.colors[i*3+k],0);assert.ok(Math.abs(mass[k]+carried-colorMass[k])/colorMass[k]<.00001);}
+});
+test('边缘和空气不能吃掉刀上余料，干抹刀在裸胚上不会喷出颜色',()=>{
+ const f=S.create(128,128,180,180),sp=S.blade({blade:56});S.sweep(f,sp,20,20,80,80);assert.equal(S.volume(f),0);sp.carry.fill(2);sp.colors.fill(230);const old=sp.carry.reduce((a,b)=>a+b,0);S.sweep(f,sp,-200,-200,-150,-150);S.lift(f,sp,-150,-150);assert.ok(Math.abs(sp.carry.reduce((a,b)=>a+b,0)-old)/old<1e-6);
+});
+test('紧凑高度图完整保存高度、奶油本色和光泽，损坏数据被拒绝',()=>{
+ const f=S.create(128,128,180,180);S.blob(f,70,70,18,2,[248,240,222]);S.blob(f,90,85,12,1,[243,186,198]);const record=S.pack(f);assert.ok(S.valid(record));assert.ok(record.data.length<128*128*12);const restored=S.unpack(record);assert.ok(Math.abs(S.volume(f)-S.volume(restored))/S.volume(f)<.001);assert.equal(S.valid({...record,data:'AAAA'}),false);
+});
+test('主游戏吸收已有奶油，按实际材料推移，不使用当前色刷漆；保存撤回重做',()=>{
+ const g=new C.Game();g.addLayer('vanilla');g.addStroke({surface:'top',level:1,style:'round',flowVersion:1,tip:true,size:24,color:'#f7b4c3',points:[{u:-.25,v:0,q:8000}]});const before=JSON.stringify(g.state),session=C.beginSmooth(g.draft,{blade:56,press:.3});session.move(pt(-.45),pt(.35));assert.ok(session.changed);session.finish();const result=session.snapshot();assert.equal(JSON.stringify(g.state),before,'预览不改存档');g.commitSmooth(result);assert.ok(C.validate(g.state));const field=S.unpack(g.draft.layers[0].icing.top);assert.ok(S.sample(field,162,180)>.2);assert.ok(S.sample(field,300,180)<.001);assert.ok(field.absorbed.includes(g.draft.strokes[0].id));const saved=JSON.stringify(g.state);assert.deepEqual(new C.Game(JSON.parse(saved)).state,g.state);g.undo();assert.equal(JSON.stringify(g.state),before);g.redo();assert.equal(JSON.stringify(g.state),saved);g.cleanSpatula();assert.equal(g.draft.spatula,undefined);
+});
+test('侧面跨物理胚层连续推料，独立记录支持删除、叠胚与刷新',()=>{
+ const g=new C.Game();g.addLayer('vanilla');g.addLayer('chocolate');g.coat('ivory');g.addStroke({surface:'side',level:2,style:'round',flowVersion:1,size:20,color:'#f7b4c3',points:[{u:-.3,v:.5,q:8000}]});const session=C.beginSmooth(g.draft,{blade:56});session.move(pt(-.5,.5,2,'side'),pt(.4,.5,2,'side'));session.finish();g.commitSmooth(session.snapshot());assert.ok(g.draft.layers.every(l=>l.icing.side));assert.ok(C.validate(g.state));g.removeLayer(0);assert.ok(C.validate(g.state));assert.equal(g.draft.layers.length,1);g.addLayer('tea','ivory',{size:4});assert.ok(C.validate(g.state));assert.equal(g.draft.layers[1].icing,undefined);
+});
+test('不同形状和尺寸的高度图按真实外露面积落刀',()=>{
+ for(const shape of ['round','heart','square'])for(const size of [4,6,8]){const g=new C.Game();g.setShape(shape);g.addLayer('vanilla','ivory',{size});g.coat('pink');const session=C.beginSmooth(g.draft,{press:.14});session.move(pt(-.3),pt(.3));session.finish();g.commitSmooth(session.snapshot());assert.ok(C.validate(g.state));assert.equal(g.draft.layers[0].icing.top.nx,size*32);}
+});
+test('装饰保护、一键抹面清理与坏快照原子拒绝',()=>{
+ const g=new C.Game();g.addLayer('vanilla');g.coat('pink');const s=C.beginSmooth(g.draft);s.move(pt(-.3),pt(.3));s.finish();const snap=s.snapshot();g.addDecoration('flower',0,0);const before=JSON.stringify(g.state);assert.throws(()=>g.commitSmooth(snap),/装饰/);assert.equal(JSON.stringify(g.state),before);g.undo();const bad=structuredClone(snap);bad.layers[0].field.data='!';assert.throws(()=>g.commitSmooth(bad),/高度图/);g.commitSmooth(snap);g.coat('ivory',true);assert.equal(g.draft.layers[0].icing,undefined);
+});
+
+test('抹过的奶盖转为刮料高度图，再淋新色不会复活旧膜或把新膜隐藏',()=>{const P=require('../pour'),g=new C.Game();g.addLayer('vanilla');const sim=new P.Cascade(g.draft,1,'#f7b4c3');const volume=sim.inject(0,0,40);g.commitGlazes(sim.snapshot(volume/P.PORTION),volume/P.PORTION);const old=g.draft.glazes[0].id,session=C.beginSmooth(g.draft,{press:.14});session.move(pt(-.4),pt(.4));session.finish();g.commitSmooth(session.snapshot());assert.equal(g.draft.glazes.length,0);assert.deepEqual(g.draft.layers[0].icing.top.films,[]);const next=new P.Cascade(g.draft,1,'#c2e6d4','silky',g.draft.glazes),amount=next.inject(0,0,20);g.commitGlazes(next.snapshot(amount/P.PORTION),amount/P.PORTION);assert.notEqual(g.draft.glazes[0].id,old);assert.ok(C.validate(g.state));const again=C.beginSmooth(g.draft,{press:.14});again.move(pt(-.4),pt(.4));again.finish();g.commitSmooth(again.snapshot());assert.equal(g.draft.glazes.length,0);assert.ok(C.validate(g.state));});
+test('旧版局部抹面的压平状态转入高度图，未抹区域仍有原先的起伏',()=>{const g=new C.Game();g.addLayer('vanilla');g.addStroke({surface:'top',level:1,style:'round',flowVersion:1,size:24,color:'#f7b4c3',points:[{u:-.3,v:0,q:4000},{u:.3,v:0,q:4000}]});for(let i=0;i<10;i++)g.smoothLocal('ivory',[pt(-.5),pt(-.1)]);const session=C.beginSmooth(g.draft),f=session.ensure(pt(0)).f;assert.ok(S.sample(f,126,180)<S.sample(f,234,180));});

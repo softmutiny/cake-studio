@@ -1,12 +1,13 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
 const Core=require('../core.js');
-test('手动抹刀松手停下，空白区不积累进度，续抹与撤回可用',()=>{
+test('真实手动刮料：裸胚不喷色，挤好奶油后局部压平，松手保存和撤回',()=>{
  const h=setup();h.click({item:'vanilla'});h.click({tool:'smooth'});const emit=(type,x,y)=>h.callbacks['#cake-canvas:'+type](h.point(x,y));
- emit('pointerdown',350,390);emit('pointerup',350,390);assert.equal(h.state().draft.layers[0].finish,undefined,'点一下不会自动完成');
- emit('pointerdown',330,390);for(let i=0;i<20;i++)emit('pointermove',330+i*4,390);emit('pointerup',406,390);const fields=h.state().draft.layers[0].polish;assert.ok(fields[0].cells);assert.equal(h.state().draft.layers[0].finish,undefined);assert.equal(Core.polishSample(fields[0],.7,0),0,'远处不受影响');
- for(let i=0;i<80;i++)h.advance(20);assert.deepEqual(h.state().draft.layers[0].polish,fields,'松手不继续增加');
- emit('pointerdown',330,390);emit('pointermove',900,-100);emit('pointerup',900,-100);assert.deepEqual(h.state().draft.layers[0].polish,fields);
- h.callbacks['document:keydown']({key:'z',ctrlKey:true,target:{tagName:'BODY'},preventDefault(){}});assert.equal(h.state().draft.layers[0].polish,undefined);
+ emit('pointerdown',330,390);emit('pointermove',406,390);emit('pointerup',406,390);assert.equal(h.state().draft.layers[0].icing,undefined,'干抹刀不会凭空刷奶油');
+ h.click({tool:'pipe'});emit('pointerdown',350,390);for(let i=0;i<60;i++)h.advance(1000/60);emit('pointerup',350,390);h.click({tool:'smooth'});
+ emit('pointerdown',330,390);for(let i=0;i<20;i++)emit('pointermove',330+i*4,390);emit('pointerup',406,390);const field=h.state().draft.layers[0].icing;assert.ok(field.top.data);assert.equal(h.state().draft.layers[0].finish,undefined);
+ for(let i=0;i<80;i++)h.advance(20);assert.deepEqual(h.state().draft.layers[0].icing,field,'松手后不继续自动抹平');
+ emit('pointerdown',330,390);emit('pointermove',900,-100);emit('pointerup',900,-100);assert.deepEqual(h.state().draft.layers[0].icing,field);
+ h.callbacks['document:keydown']({key:'z',ctrlKey:true,target:{tagName:'BODY'},preventDefault(){}});assert.equal(h.state().draft.layers[0].icing,undefined);assert.equal(h.state().draft.strokes.length,1);
 });
 test('一键抹面仍自动完成，装饰后不能启动覆盖动画',()=>{
  const h=setup();h.click({item:'vanilla'});const clickId=id=>h.callbacks['document:click']({target:{closest:()=>({id,dataset:{}})}});
