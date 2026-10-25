@@ -1,0 +1,29 @@
+const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),core=require('../core.js'),model=require('../cloud-model.js');
+function harness(seed){
+ const memory=new Map(),metas=new Map(),assets=new Map(),backups=[],listeners={},nodes=new Map();let key='guest',state=core.initial(),authChange,remote=seed?structuredClone(seed):null,saves=0;
+ const node=s=>{if(!nodes.has(s))nodes.set(s,{textContent:'',title:'',innerHTML:'',inert:false,open:false,showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(s);};
+ const store={test:false,guestKey:'guest',get key(){return key;},switchKey(k){key=k;},accountKey:id=>'user:'+id,read:k=>memory.has(k)?JSON.parse(memory.get(k)):null,meta:k=>metas.get(k||key)||{revision:0,dirty:false},setMeta(m,k){metas.set(k||key,structuredClone(m));},write(s){memory.set(key,JSON.stringify(s));},getAsset:async(id,scope=key)=>assets.get(scope+id),putAsset:async(a,scope=key)=>assets.set(scope+a.id,a),backup:async(s,reason)=>{backups.push({state:structuredClone(s),reason});},backups:async()=>backups};
+ const app={getState:()=>structuredClone(state),snapshot:()=>structuredClone(state),switchState(s,k){state=structuredClone(s);key=k;},replaceState(s){state=structuredClone(s);ctx.CakeCloud.changed();},busy:()=>false,notify(){},refresh(){}};
+ const client={auth:{onAuthStateChange(fn){authChange=fn;},getSession:async()=>({data:{session:null}}),signOut:async()=>({})},from(){const q={select(){return q;},eq(){return q;},maybeSingle:async()=>({data:remote?structuredClone(remote):null})};return q;},rpc:async(name,args)=>{
+  if(name==='cake_is_moderator')return {data:false};if(name==='cake_assets_resolve')return {data:[]};if(name==='cake_save'){saves++;if((remote?.revision||0)!==args.expected_revision)return {data:{conflict:true,...structuredClone(remote)}};remote={state:structuredClone(args.payload),revision:args.expected_revision+1};return {data:{conflict:false,revision:remote.revision}};}throw Error(name);
+ }};
+ const ctx={CakeStore:store,CakeCloudModel:model,CakeApp:app,CakeCore:core,CakeArt:{registerAsset:async()=>{},clearCustomAssets(){}},CAKE_CLOUD_CONFIG:{url:'https://test.supabase.co',publishableKey:'test'},supabase:{createClient:()=>client},document:{querySelector:node,addEventListener:(n,f)=>listeners[n]=f,visibilityState:'visible'},localStorage:{setItem:(k,v)=>memory.set(k,v)},location:{href:'https://example.com/'},setTimeout:(fn,ms)=>ms===0?setTimeout(fn,0):0,clearTimeout(){},URL,Blob,Event,structuredClone,console};ctx.window=ctx;ctx.addEventListener=()=>{};ctx.dispatchEvent=()=>{};
+ vm.runInNewContext(fs.readFileSync(require.resolve('../cloud.js'),'utf8'),ctx);
+ return {ctx,app,store,memory,metas,backups,node,get remote(){return remote;},set remote(r){remote=structuredClone(r);},get saves(){return saves;},async login(id){authChange('SIGNED_IN',{user:{id,email:id+'@example.invalid'}});await new Promise(r=>setTimeout(r,15));},async logout(){authChange('SIGNED_OUT',null);await new Promise(r=>setTimeout(r,15));}};
+}
+test('登录从专属账号存档读取云端，退出回到游客，原游客作品不被上传',async()=>{
+ const cloudGame=new core.Game();cloudGame.addLayer('chocolate');const h=harness({state:cloudGame.state,revision:3});const guest=new core.Game();guest.addLayer('tea');h.app.replaceState(guest.state);await h.login('alice');assert.equal(h.app.getState().draft.layers[0].item,'chocolate');assert.equal(h.saves,0);assert.equal(h.store.key,'user:alice');await h.logout();assert.equal(h.app.getState().draft.layers[0].item,'tea');assert.equal(h.store.key,'guest');
+});
+test('账号内离线编辑遇到另一个设备的新版本，真实同步器保留本机并显示冲突',async()=>{
+ const h=harness();await h.login('alice');let current=h.app.getState();current.draft.name='本机新名字';h.app.replaceState(current);const remote=structuredClone(h.remote);remote.state.draft.name='另一设备的名字';remote.revision++;h.remote=remote;await h.ctx.CakeCloud.sync();assert.equal(h.app.getState().draft.name,'本机新名字');assert.equal(h.remote.state.draft.name,'另一设备的名字');assert.match(h.node('#account-btn').title,/两台设备/);
+});
+test('另一标签更新共享 localStorage 修订号，也不能欺骗本标签覆盖云端',async()=>{
+ const h=harness();await h.login('alice');const r=structuredClone(h.remote);r.state.draft.name='另一个标签';r.revision++;h.remote=r;h.metas.set('user:alice',{revision:r.revision,dirty:false});const mine=h.app.getState();mine.draft.name='当前标签';h.app.replaceState(mine);await h.ctx.CakeCloud.sync();assert.equal(h.remote.state.draft.name,'另一个标签');assert.match(h.node('#account-btn').title,/两台设备/);
+});
+test('损坏的账号本机存档必须锁住，不能把游客作品上传给该账号',async()=>{
+ const h=harness();const guest=new core.Game();guest.addLayer('tea');h.app.replaceState(guest.state);h.memory.set('user:alice','{broken');await h.login('alice');await h.ctx.CakeCloud.sync();assert.equal(h.saves,0);assert.equal(h.store.key,'user:alice');assert.equal(h.node('.app').inert,true);assert.equal(h.memory.get('user:alice'),'{broken');await h.logout();assert.equal(h.app.getState().draft.layers[0].item,'tea');assert.equal(h.memory.get('user:alice'),'{broken');
+});
+
+test('已下架配件不会阻止新设备恢复和继续同步其他作品',async()=>{
+ const a={id:'custom_30000000-0000-4000-8000-000000000001',name:'旧糖花',size:[80,80],anchor:.9},g=new core.Game();g.state.customAssets=[a];core.registerAssets([a]);g.addLayer('vanilla');g.addDecoration(a.id,0,0);const h=harness({state:g.state,revision:3});await h.login('alice');assert.equal(h.app.getState().draft.decos[0].item,a.id);assert.equal((await h.store.getAsset(a.id)).unavailable,true);const next=h.app.getState();next.draft.name='继续制作';h.app.replaceState(next);await h.ctx.CakeCloud.sync();assert.equal(h.remote.state.draft.name,'继续制作');assert.equal(h.remote.revision,4);
+});
