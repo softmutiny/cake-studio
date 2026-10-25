@@ -80,3 +80,9 @@ body:has(#workshop.active #view-top[aria-pressed=true]) #overhead-backdrop{opaci
 @media(prefers-reduced-motion:reduce){#overhead-backdrop{transition:none}}
 
 .smooth-meter{display:flex;gap:9px;align-items:center;font-size:13px;margin:15px 0}.smooth-meter progress{min-width:0;flex:1;accent-color:#83bca3}.cream-block-note{padding:10px;border-radius:10px;background:#f8e6d0;color:#805531;font:12px/1.7 sans-serif}
+
+.brand-en{display:block;font:600 10px/1.1 sans-serif;letter-spacing:.055em;color:#9b7654;margin:1px 0 3px}.cream-mode-tabs{flex-wrap:wrap}.cream-mode-tabs button{flex:1;min-width:62px}.smooth-surfaces button{font-size:12px}.material-swatch{display:inline-block;width:24px;height:12px;border-radius:8px;border:1px solid #946d4e60}.filling-ready{margin-bottom:10px}
+
+.turntable-controls{display:flex;align-items:center;justify-content:center;gap:5px;min-height:36px;margin:0 0 5px;padding:4px 8px;background:#fff8e7dd;border-radius:13px;border:1px solid #c19a6a55}.turntable-controls button{padding:5px 9px;font-size:12px;min-height:30px}.turntable-controls button[aria-pressed=true]{background:#bedace}.turntable-controls label{display:flex;align-items:center;gap:4px;font-size:11px;white-space:nowrap}.turntable-controls input{width:80px;accent-color:#b58b68}.turntable-controls output{font-variant-numeric:tabular-nums;min-width:28px}.turntable-controls .turn-speed input{width:48px}@media(max-width:700px){.turntable-controls{gap:3px;padding:3px 5px;flex-wrap:wrap}.turntable-controls input{width:64px}.turntable-controls .turn-speed{font-size:10px}.turntable-controls button{padding:4px 7px;min-height:32px}.brand-en{font-size:8px}}
+
+.smooth-surfaces{grid-template-columns:repeat(3,minmax(0,1fr))}.smooth-options [aria-label="抹刀尺寸"]{grid-template-columns:repeat(2,minmax(0,1fr))}.smooth-options .tool-detail{padding:8px 2px;margin:4px 0}

@@ -26,7 +26,7 @@ function sync(){
   const selected=$('#selection-controls').classList.contains('has-selection');
   $$('[data-tray-open="adjust"]').forEach(b=>{b.classList.toggle('ready',selected);b.textContent=selected?'调整装饰 ●':'调整装饰';});
   const tool=$('.toolbox button.active')?.dataset.tool;
-  $('[data-tray-open="materials"]').textContent=({pipe:'花嘴 / 颜色',pour:'奶盖 / 流量',smooth:'抹面 / 颜色'})[tool]||'挑材料';
+  $('[data-tray-open="materials"]').textContent=({pipe:'花嘴 / 颜色',pour:'奶盖 / 流量',smooth:'抹刀 / 范围'})[tool]||'挑材料';
 }
 document.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b||b.disabled)return;
