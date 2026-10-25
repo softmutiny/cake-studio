@@ -78,3 +78,5 @@ body:has(#workshop.active #view-top[aria-pressed=true]) #overhead-backdrop{opaci
 @media(min-width:901px) and (max-width:1190px){#workshop.active{grid-template-columns:190px minmax(0,1fr) 278px;gap:10px}.app{padding-left:12px;padding-right:12px}.ingredients{padding:13px}.toolbox button{font-size:10px}.toolbox button span img{width:28px;height:28px}.structure .panel-head h2{font-size:19px}}
 @media(max-width:900px){.camera-options>summary{min-height:40px;padding:10px 8px;font-size:12px}.view-controls{height:94px;min-height:94px;flex-basis:94px}.camera-options>div{right:-20px}.surface-choice{margin:5px 0}.surface-auto{min-height:40px}.surface-advanced{margin-top:4px}}
 @media(prefers-reduced-motion:reduce){#overhead-backdrop{transition:none}}
+
+.smooth-meter{display:flex;gap:9px;align-items:center;font-size:13px;margin:15px 0}.smooth-meter progress{min-width:0;flex:1;accent-color:#83bca3}.cream-block-note{padding:10px;border-radius:10px;background:#f8e6d0;color:#805531;font:12px/1.7 sans-serif}

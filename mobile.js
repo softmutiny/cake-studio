@@ -36,7 +36,7 @@ document.addEventListener('click',e=>{
   if(b.hasAttribute('data-tray-close')){closeTray(true);return;}
   if(!narrow.matches)return;
   // Select a piece, then place it directly on the unobstructed cake.
-  if(b.dataset.item||b.dataset.plate||b.id==='layer-cream')closeTray();
+  if(b.dataset.item||b.dataset.plate||['layer-cream','auto-smooth'].includes(b.id))closeTray();
   // A tool is immediately usable. Its settings are one tap away, not a mandatory modal.
   if(b.closest('.toolbox'))closeTray();
   if(b.id==='quick-cream'||b.id==='plate-cream'){

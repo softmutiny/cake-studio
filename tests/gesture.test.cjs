@@ -1,5 +1,18 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
 const Core=require('../core.js');
+test('手动抹刀松手停下，空白区不积累进度，续抹与撤回可用',()=>{
+ const h=setup();h.click({item:'vanilla'});h.click({tool:'smooth'});const emit=(type,x,y)=>h.callbacks['#cake-canvas:'+type](h.point(x,y));
+ emit('pointerdown',350,390);emit('pointerup',350,390);assert.equal(h.state().draft.layers[0].finish,undefined,'点一下不会自动完成');
+ emit('pointerdown',330,390);for(let i=0;i<20;i++)emit('pointermove',330+i*4,390);emit('pointerup',406,390);const progress=h.state().draft.layers[0].finish.progress;assert.ok(progress>0&&progress<.1);
+ for(let i=0;i<80;i++)h.advance(20);assert.equal(h.state().draft.layers[0].finish.progress,progress,'松手不继续增加');
+ emit('pointerdown',330,390);emit('pointermove',900,-100);emit('pointerup',900,-100);assert.equal(h.state().draft.layers[0].finish.progress,progress);
+ h.callbacks['document:keydown']({key:'z',ctrlKey:true,target:{tagName:'BODY'},preventDefault(){}});assert.equal(h.state().draft.layers[0].finish,undefined);
+});
+test('一键抹面仍自动完成，装饰后不能启动覆盖动画',()=>{
+ const h=setup();h.click({item:'vanilla'});const clickId=id=>h.callbacks['document:click']({target:{closest:()=>({id,dataset:{}})}});
+ clickId('auto-smooth');for(let i=0;i<70;i++)h.advance(20);assert.equal(h.state().draft.coat,'#fff3d5');
+ h.click({item:'flower'});h.callbacks['#cake-canvas:pointerdown'](h.point(380,390));h.callbacks['#cake-canvas:pointerup'](h.point(380,390));const before=JSON.stringify(h.state());clickId('auto-smooth');for(let i=0;i<70;i++)h.advance(20);assert.equal(JSON.stringify(h.state()),before);assert.match(h.nodes.get('#toast').textContent,/装饰/);
+});
 
 test('实际鼠标无需指定表面即可摆到顶面、侧边、盘沿并拖回顶面',()=>{
  const h=setup();h.click({item:'vanilla'});h.click({category:'decoration'});h.click({item:'berry'});
